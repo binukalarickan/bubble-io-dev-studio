@@ -73,133 +73,238 @@ export const Sidebar: React.FC<SidebarProps> = ({
         borderRight: '1px solid var(--border-subtle)',
         display: 'flex',
         flexDirection: 'column',
-        padding: '16px 14px',
-        gap: '14px',
+        padding: '0 14px 14px 14px',
+        gap: '12px',
         flexShrink: 0,
         boxSizing: 'border-box',
         overflow: 'hidden'
       }}>
-      {/* App Branding */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0 8px' }}>
-        <div style={{
-          width: '38px',
-          height: '38px',
-          borderRadius: '10px',
-          background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+        {/* macOS Traffic Lights Clearance & Draggable Window Header Area */}
+        <div 
+          className="app-drag-region"
+          style={{
+            height: '42px',
+            minHeight: '42px',
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            flexShrink: 0,
+            cursor: 'default'
+          }}
+          title="Drag window"
+        />
+
+        {/* App Branding */}
+        <div className="app-no-drag" style={{
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 4px 12px rgba(99, 102, 241, 0.4)'
+          gap: '12px',
+          padding: '0 6px 12px 6px',
+          borderBottom: '1px solid var(--border-subtle)',
+          flexShrink: 0
         }}>
-          <Layers size={22} color="#ffffff" />
-        </div>
-        <div>
-          <h1 style={{ fontSize: '1rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)', margin: 0 }}>
-            Bubble Studio
-          </h1>
-          <div style={{ fontSize: '0.675rem', color: 'var(--text-muted)' }}>
-            {APP_VERSION_LABEL}
+          <div style={{
+            width: '38px',
+            height: '38px',
+            borderRadius: '11px',
+            background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 14px rgba(99, 102, 241, 0.45)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            flexShrink: 0
+          }}>
+            <Layers size={21} color="#ffffff" />
+          </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <h1 style={{
+                fontSize: '0.975rem',
+                fontWeight: 800,
+                letterSpacing: '-0.02em',
+                color: 'var(--text-primary)',
+                margin: 0,
+                whiteSpace: 'nowrap'
+              }}>
+                Bubble Studio
+              </h1>
+            </div>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              fontSize: '0.675rem',
+              fontWeight: 600,
+              color: 'var(--text-muted)',
+              marginTop: '1px'
+            }}>
+              <span style={{
+                background: 'rgba(99, 102, 241, 0.12)',
+                color: 'var(--primary)',
+                padding: '1px 6px',
+                borderRadius: '4px',
+                fontSize: '0.65rem',
+                fontWeight: 700
+              }}>
+                {APP_VERSION_LABEL}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Custom Project Switcher Dropdown */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 2px' }}>
-          <span style={{ fontSize: '0.675rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>
-            Active Application
-          </span>
-          <button
-            onClick={onOpenConnectModal}
-            title="Connect another Bubble application"
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--primary)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '2px',
-              fontSize: '0.7rem',
-              fontWeight: 600,
-              padding: 0
-            }}
-          >
-            <Plus size={11} />
-            <span>Add</span>
-          </button>
-        </div>
-
-        <ProjectDropdown
-          activeProject={activeProject}
-          projects={projects}
-          onSelectProject={onSelectProject}
-          onOpenConnectModal={onOpenConnectModal}
-          onDeleteProject={onDeleteProject}
-        />
-      </div>
-
-      {/* Navigation List */}
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1, overflowY: 'auto', minHeight: 0 }}>
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = currentTab === item.id;
-          return (
+        {/* Custom Project Switcher Dropdown */}
+        <div className="app-no-drag" style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px' }}>
+            <span style={{
+              fontSize: '0.675rem',
+              color: 'var(--text-muted)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              fontWeight: 700
+            }}>
+              Active Application
+            </span>
             <button
-              key={item.id}
-              onClick={() => handleNavClick(item.id as NavigationTab)}
+              onClick={onOpenConnectModal}
+              title="Connect another Bubble application"
               style={{
+                background: 'rgba(99, 102, 241, 0.1)',
+                border: '1px solid rgba(99, 102, 241, 0.2)',
+                borderRadius: '4px',
+                color: 'var(--primary)',
+                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '9px 12px',
-                borderRadius: 'var(--radius-md)',
-                backgroundColor: isActive ? 'var(--bg-surface-elevated)' : 'transparent',
-                color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
-                border: isActive ? '1px solid var(--border-active)' : '1px solid transparent',
-                fontWeight: isActive ? 700 : 500,
-                fontSize: '0.825rem',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                textAlign: 'left'
+                gap: '3px',
+                fontSize: '0.675rem',
+                fontWeight: 700,
+                padding: '2px 7px',
+                transition: 'all 0.15s ease'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Icon size={17} color={isActive ? 'var(--primary)' : 'currentColor'} />
-                <span>{item.label}</span>
-              </div>
-              {item.badge && (
-                <span className={`badge ${isActive ? 'badge-indigo' : 'badge-cyan'}`} style={{ fontSize: '0.65rem' }}>
-                  {item.badge}
-                </span>
-              )}
+              <Plus size={11} />
+              <span>Add</span>
             </button>
-          );
-        })}
-      </nav>
+          </div>
 
-      {/* Environment / Footer */}
-      <div style={{
-        padding: '10px 12px',
-        borderRadius: 'var(--radius-md)',
-        background: 'rgba(255, 255, 255, 0.02)',
-        border: '1px solid var(--border-subtle)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '3px',
-        flexShrink: 0
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: 'var(--accent-emerald)', display: 'inline-block' }}></span>
-          <span style={{ fontSize: '0.725rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-            System Ready
+          <ProjectDropdown
+            activeProject={activeProject}
+            projects={projects}
+            onSelectProject={onSelectProject}
+            onOpenConnectModal={onOpenConnectModal}
+            onDeleteProject={onDeleteProject}
+          />
+        </div>
+
+        {/* Navigation List */}
+        <nav className="app-no-drag" style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '3px',
+          flex: 1,
+          overflowY: 'auto',
+          minHeight: 0,
+          paddingRight: '2px'
+        }}>
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleNavClick(item.id as NavigationTab)}
+                style={{
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 12px',
+                  borderRadius: 'var(--radius-md)',
+                  backgroundColor: isActive ? 'var(--bg-surface-elevated)' : 'transparent',
+                  color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
+                  border: isActive ? '1px solid var(--border-active)' : '1px solid transparent',
+                  fontWeight: isActive ? 700 : 500,
+                  fontSize: '0.825rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+                  textAlign: 'left'
+                }}
+              >
+                {isActive && (
+                  <span style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: '25%',
+                    bottom: '25%',
+                    width: '3px',
+                    borderRadius: '0 4px 4px 0',
+                    backgroundColor: 'var(--primary)',
+                    boxShadow: '0 0 8px var(--primary)'
+                  }} />
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Icon size={17} color={isActive ? 'var(--primary)' : 'currentColor'} />
+                  <span>{item.label}</span>
+                </div>
+                {item.badge && (
+                  <span className={`badge ${isActive ? 'badge-indigo' : 'badge-cyan'}`} style={{ fontSize: '0.625rem', padding: '1px 6px' }}>
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Environment / Footer */}
+        <div className="app-no-drag" style={{
+          padding: '10px 12px',
+          borderRadius: 'var(--radius-md)',
+          background: 'rgba(255, 255, 255, 0.02)',
+          border: '1px solid var(--border-subtle)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px',
+          flexShrink: 0
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+              <span style={{
+                position: 'relative',
+                display: 'flex',
+                width: '7px',
+                height: '7px'
+              }}>
+                <span style={{
+                  position: 'absolute',
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--accent-emerald)',
+                  opacity: 0.75,
+                  animation: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite'
+                }}></span>
+                <span style={{
+                  position: 'relative',
+                  width: '7px',
+                  height: '7px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--accent-emerald)'
+                }}></span>
+              </span>
+              <span style={{ fontSize: '0.725rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                System Ready
+              </span>
+            </div>
+            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+              Live GUI
+            </span>
+          </div>
+          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+            Node 24 • Electron 34 • macOS & Win
           </span>
         </div>
-        <span style={{ fontSize: '0.675rem', color: 'var(--text-muted)' }}>
-          Node 24 • Electron 34 • macOS & Win
-        </span>
-      </div>
-    </aside>
+      </aside>
     </>
   );
 };

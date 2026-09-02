@@ -64,20 +64,21 @@ export const Header: React.FC<HeaderProps> = ({
   const details = getTabDetails(currentTab);
 
   return (
-    <header className="header-container" style={{
+    <header className="header-container app-drag-region" style={{
       height: 'var(--header-height)',
       backgroundColor: 'var(--bg-card)',
       borderBottom: '1px solid var(--border-subtle)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 32px',
+      padding: '0 28px',
       flexShrink: 0,
-      backdropFilter: 'blur(12px)',
-      gap: '12px'
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
+      gap: '16px'
     }}>
       {/* Mobile Toggle & Title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div className="app-no-drag" style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
         {onToggleMobileSidebar && (
           <button
             onClick={onToggleMobileSidebar}
@@ -89,29 +90,54 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        <div>
+        <div style={{ minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+            <h2 style={{
+              fontSize: '1.1rem',
+              fontWeight: 800,
+              letterSpacing: '-0.02em',
+              color: 'var(--text-primary)',
+              margin: 0,
+              whiteSpace: 'nowrap'
+            }}>
               {details.title}
             </h2>
             {activeProject && (
-              <span className={`badge ${activeProject.environment === 'live' ? 'badge-emerald' : 'badge-amber'}`}>
+              <span className={`badge ${activeProject.environment === 'live' ? 'badge-emerald' : 'badge-amber'}`} style={{ fontWeight: 700, letterSpacing: '0.04em' }}>
                 <ShieldCheck size={12} />
                 {activeProject.environment.toUpperCase()}
               </span>
             )}
           </div>
-          <p className="mobile-hide" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+          <p className="mobile-hide" style={{
+            fontSize: '0.75rem',
+            color: 'var(--text-secondary)',
+            marginTop: '2px',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}>
             {details.desc}
           </p>
         </div>
       </div>
 
       {/* Action Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div className="app-no-drag" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
         {activeProject?.customDomain && (
-          <div className="mobile-hide" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            <Globe size={14} />
+          <div className="mobile-hide" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '0.775rem',
+            fontWeight: 500,
+            color: 'var(--text-muted)',
+            background: 'rgba(255, 255, 255, 0.03)',
+            border: '1px solid var(--border-subtle)',
+            padding: '4px 10px',
+            borderRadius: 'var(--radius-md)'
+          }}>
+            <Globe size={13} color="var(--primary)" />
             <span>{activeProject.customDomain}</span>
           </div>
         )}
@@ -121,12 +147,27 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onOpenCopilot}
             className="btn btn-secondary btn-sm"
-            title="Open Bubble AI Copilot & Query Assistant (Ctrl + I)"
-            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            title="Open Bubble AI Copilot & Query Assistant (Ctrl + I / Cmd + I)"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(6, 182, 212, 0.12))',
+              border: '1px solid rgba(99, 102, 241, 0.3)'
+            }}
           >
             <Sparkles size={14} color="var(--accent-cyan)" />
-            <span className="mobile-hide">AI Copilot</span>
-            <span style={{ fontSize: '0.65rem', background: 'rgba(255, 255, 255, 0.1)', padding: '1px 5px', borderRadius: '4px' }}>Ctrl+I</span>
+            <span className="mobile-hide" style={{ fontWeight: 700 }}>AI Copilot</span>
+            <span style={{
+              fontSize: '0.625rem',
+              fontWeight: 700,
+              background: 'rgba(255, 255, 255, 0.1)',
+              padding: '1px 5px',
+              borderRadius: '4px',
+              color: 'var(--text-secondary)'
+            }}>
+              ⌘I
+            </span>
           </button>
         )}
 
@@ -135,6 +176,7 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={onToggleTheme}
           className="btn btn-secondary btn-sm"
           title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
+          style={{ width: '34px', height: '34px', padding: 0 }}
         >
           {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
         </button>
@@ -143,16 +185,19 @@ export const Header: React.FC<HeaderProps> = ({
         <button 
           onClick={onToggleTerminal}
           className={`btn btn-sm ${isTerminalOpen ? 'btn-primary' : 'btn-secondary'}`}
-          title="Toggle Studio Logs Console"
+          title="Toggle Studio Logs Console (Ctrl + `)"
+          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
         >
-          <Terminal size={15} />
+          <Terminal size={14} />
           <span>Console</span>
           {logCount > 0 && (
             <span style={{
-              background: 'rgba(255, 255, 255, 0.2)',
+              background: isTerminalOpen ? 'rgba(255, 255, 255, 0.25)' : 'rgba(99, 102, 241, 0.2)',
+              color: isTerminalOpen ? '#ffffff' : 'var(--primary)',
               borderRadius: '99px',
               padding: '1px 6px',
-              fontSize: '0.7rem'
+              fontSize: '0.675rem',
+              fontWeight: 700
             }}>
               {logCount}
             </span>
