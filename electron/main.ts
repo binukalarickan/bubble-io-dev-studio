@@ -255,6 +255,27 @@ ipcMain.handle('http:fetch', async (_event, url: string, headers?: Record<string
   }
 });
 
+ipcMain.handle('http:request', async (_event, options: { url: string; method?: string; headers?: Record<string, string>; body?: any }) => {
+  try {
+    const { url, method = 'GET', headers = {}, body } = options;
+    const fetchOptions: any = {
+      method: method.toUpperCase(),
+      headers: { ...headers }
+    };
+    if (body !== undefined && fetchOptions.method !== 'GET' && fetchOptions.method !== 'HEAD') {
+      fetchOptions.body = typeof body === 'string' ? body : JSON.stringify(body);
+      if (!fetchOptions.headers['Content-Type'] && !fetchOptions.headers['content-type']) {
+        fetchOptions.headers['Content-Type'] = 'application/json';
+      }
+    }
+    const res = await fetch(url, fetchOptions);
+    const data = await res.json().catch(() => null);
+    return { ok: res.ok, status: res.status, data };
+  } catch (err: any) {
+    return { ok: false, error: err.message };
+  }
+});
+
 // Issue #4 Fix: Native safeStorage encryption for API tokens & credentials
 ipcMain.handle('secure:encrypt', async (_event, plainText: string) => {
   if (!plainText || typeof plainText !== 'string') return '';

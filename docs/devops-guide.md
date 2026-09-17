@@ -39,6 +39,13 @@ The module is organized into four sections:
 * **Dependency Resolution**: Topologically sorts tables by dependency hierarchy, creates parents first, collects real Bubble `_id` values, and replaces `@alias` references before creating child records.
 * **Circular Reference Handling**: Detects circular dependencies and resolves them using two-pass deferred `PATCH` requests.
 
+### Live Relational Synthetic Seeder (Bubble Data API)
+* **Direct Authenticated Creation**: Connects to the target Bubble Data API (`/api/1.1/obj/{type}`) over HTTPS using your application's API Bearer token.
+* **Topological DAG Sequence**: Automatically detects foreign key relationships between custom entities and sorts execution order so parent entities (e.g., Companies) are created before child entities (e.g., Projects and Tasks).
+* **Contextual Data Generation**: Automatically assigns realistic synthetic values based on field names and types (names, emails, E.164 phone numbers, monetary amounts, ISO timestamps, booleans).
+* **Rate Limiting Protection**: Enforces an integrated token-bucket rate limiter of 10 requests per second to avoid triggering Bubble 429 throttling errors.
+* **Rollback Manifest**: Tracks created record identifiers per data type and allows single-click reverse rollback, deleting generated test data without leaving orphaned records.
+
 ---
 
 ## 2. Schema & Flow (Architecture & Types)

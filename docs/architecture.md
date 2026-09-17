@@ -48,6 +48,9 @@ graph TD
             AS[ApiStudioEngine & WebhookBridge]
             DG[DocGenEngine & DiagramExporter]
             SN[SnapshotEngine & Rollback]
+            OAE[OpenApiExporter & Reverse OpenAPI 3.1]
+            DAA[DataArchitectureAuditor & Relational Anti-Patterns]
+            LDS[LiveDataSeeder & Topological DAG Engine]
         end
 
         subgraph "Presentation Layer"
@@ -178,3 +181,30 @@ Dev Studio includes an embedded Node HTTP server in the Electron main process fo
 * **Body Stream Parsing**: Collects incoming HTTP chunks up to 10 MB, parses JSON bodies when valid, and preserves raw text for signature verification.
 * **IPC Broadcast**: Dispatches captured events to renderer windows via `mainWindow.webContents.send('webhook:received', payload)` for live inspection.
 * **Bubble Forwarding**: Forwards inspected payloads directly to Bubble backend workflows with custom headers and authorization tokens.
+
+---
+
+## 9. API & Relational Diagnostic Engines (v3.8.0)
+
+### 9.1 Reverse OpenAPI 3.1 Exporter (`src/core/api-studio/openApiExporter.ts`)
+* **Endpoint Synthesis**: Synthesizes OpenAPI 3.1 specification trees from parsed `api_workflows`, `backend_workflows`, and Bubble database types (`/obj/{type}`).
+* **Type Normalization**: Converts Bubble types (`text`, `number`, `boolean`, `date`, `custom.*`, `list.*`) to OpenAPI 3.1 primitives, component schemas, and `$ref` relational pointers.
+* **Multi-Format Serialization**: Emits both JSON and standard YAML definitions without external native dependencies.
+* **SDK & Snippet Generation**: Computes copy-ready request snippets for `curl`, TypeScript (Fetch), and Python (`requests`).
+
+### 9.2 Data Architecture & Anti-Pattern Auditor (`src/core/audit/dataArchitectureAuditor.ts`)
+* **AST Relational Inspection**: Evaluates database definitions and search expressions against relational scaling patterns.
+* **Detector Rules**:
+  - `UNBOUNDED_LIST`: Detects unbounded array fields without join-table or sub-table indirection.
+  - `WIDE_TABLE_BLOAT`: Identifies tables exceeding 40 fields that degrade single-record fetch latency.
+  - `CLIENT_SIDE_FILTER_ABUSE`: Detects client-side `:filter` expressions chained after large database queries.
+  - `DANGLING_GHOST_RELATION`: Flags foreign-key references pointing to deleted or non-existent types.
+* **Data Health Scorecard**: Computes a normalized health score (0–100) with weighted penalties per severity level (`HIGH` = 15, `MEDIUM` = 8, `LOW` = 3).
+
+### 9.3 Live Relational Synthetic Seeder (`src/core/devops/liveDataSeeder.ts`)
+* **Topological DAG Sorting**: Uses Kahn's algorithm to resolve foreign-key dependencies and order insertion jobs so parent records exist before children.
+* **Self-Reference & Cycle Resolution**: Breaks circular references cleanly to avoid deadlocks.
+* **Token-Bucket Rate Limiter**: Enforces a strict 10 requests/second ceiling to respect Bubble Data API throughput thresholds.
+* **Two-Way IPC HTTP Bridge**: Routes network requests via Electron main process (`http:request`) to bypass renderer CORS restrictions.
+* **Transactional Tracking & Rollback**: Records every generated Bubble `_id` and provides single-click rollback deleting seeded records in reverse topological order.
+

@@ -1,6 +1,6 @@
 # Bubble.io Dev Studio
 
-[![Version](https://img.shields.io/badge/Version-3.7.0-brightgreen.svg)]()
+[![Version](https://img.shields.io/badge/Version-3.8.0-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg?style=flat&logo=typescript)](https://www.typescriptlang.org/)
 [![Electron](https://img.shields.io/badge/Electron-34-47848F.svg?style=flat&logo=electron)](https://www.electronjs.org/)
 [![React](https://img.shields.io/badge/React-18-61DAFB.svg?style=flat&logo=react)](https://react.dev/)
@@ -38,17 +38,17 @@ Bubble.io Dev Studio is a desktop IDE for Bubble.io developers, agencies, and QA
 
 ---
 
-## Download Desktop App (v3.7.0 Pre-Built Binaries)
+## Download Desktop App (v3.8.0 Pre-Built Binaries)
 
 Pre-built binaries for running the desktop app directly:
 
-| Platform | Download Link (v3.7.0 Stable) | Package Format | Architecture |
+| Platform | Download Link (v3.8.0 Stable) | Package Format | Architecture |
 | :--- | :--- | :--- | :--- |
-| **Windows** | [Bubble.io-Dev-Studio-Setup-3.7.0.exe](https://github.com/alexandrmotologa/bubble-io-dev-studio/releases/download/v3.7.0/Bubble.io-Dev-Studio-Setup-3.7.0.exe) • [Portable .exe](https://github.com/alexandrmotologa/bubble-io-dev-studio/releases/download/v3.7.0/Bubble.io-Dev-Studio-3.7.0.exe) | NSIS Setup / Portable | x64 |
-| **macOS** | [Bubble.io-Dev-Studio-3.7.0.dmg](https://github.com/alexandrmotologa/bubble-io-dev-studio/releases/download/v3.7.0/Bubble.io-Dev-Studio-3.7.0.dmg) • [.zip](https://github.com/alexandrmotologa/bubble-io-dev-studio/releases/download/v3.7.0/Bubble.io-Dev-Studio-3.7.0-mac.zip) | Apple Disk Image / ZIP | Apple Silicon (M1-M4) & Intel |
-| **Linux** | [Bubble.io-Dev-Studio-3.7.0.AppImage](https://github.com/alexandrmotologa/bubble-io-dev-studio/releases/download/v3.7.0/Bubble.io-Dev-Studio-3.7.0.AppImage) | AppImage format | x64 |
+| **Windows** | [Bubble.io-Dev-Studio-Setup-3.8.0.exe](https://github.com/alexandrmotologa/bubble-io-dev-studio/releases/download/v3.8.0/Bubble.io-Dev-Studio-Setup-3.8.0.exe) • [Portable .exe](https://github.com/alexandrmotologa/bubble-io-dev-studio/releases/download/v3.8.0/Bubble.io-Dev-Studio-3.8.0.exe) | NSIS Setup / Portable | x64 |
+| **macOS** | [Bubble.io-Dev-Studio-3.8.0.dmg](https://github.com/alexandrmotologa/bubble-io-dev-studio/releases/download/v3.8.0/Bubble.io-Dev-Studio-3.8.0.dmg) • [.zip](https://github.com/alexandrmotologa/bubble-io-dev-studio/releases/download/v3.8.0/Bubble.io-Dev-Studio-3.8.0-mac.zip) | Apple Disk Image / ZIP | Apple Silicon (M1-M4) & Intel |
+| **Linux** | [Bubble.io-Dev-Studio-3.8.0.AppImage](https://github.com/alexandrmotologa/bubble-io-dev-studio/releases/download/v3.8.0/Bubble.io-Dev-Studio-3.8.0.AppImage) | AppImage format | x64 |
 
-> **Release Page**: [View v3.7.0 release notes on GitHub](https://github.com/alexandrmotologa/bubble-io-dev-studio/releases/tag/v3.7.0) | [Latest Release](https://github.com/alexandrmotologa/bubble-io-dev-studio/releases/latest)
+> **Release Page**: [View v3.8.0 release notes on GitHub](https://github.com/alexandrmotologa/bubble-io-dev-studio/releases/tag/v3.8.0) | [Latest Release](https://github.com/alexandrmotologa/bubble-io-dev-studio/releases/latest)
 >
 > **Windows Installation Note**: Because this open-source build does not carry a paid EV code-signing certificate, Windows SmartScreen may display "Windows protected your PC". Click **More info** and select **Run anyway** to launch the installer.
 
@@ -158,6 +158,7 @@ For technical details, see the [Cloud Direct Sync Guide](docs/cloud-sync-guide.m
 * **Live Grid**: CRUD explorer, inline cell editing (`PATCH`), record drawer, sorting, and JSON/CSV exports.
 * **Batch Importer**: Import CSV and JSON files with automatic column mapping, type casting, and progress tracking.
 * **Relational Data Seeder**: Seed multi-table records using `_ref: "@alias"` references with topological sorting and circular link resolution.
+* **Live Relational Synthetic Seeder (Bubble Data API)**: Seeds staging and test databases directly via Bubble's authenticated Data API (`/api/1.1/obj/{type}`). Topologically sorts entity dependencies (parents created before children), generates contextual data using built-in generators, enforces a 10 requests/second token-bucket rate limiter, and keeps a rollback manifest for single-click data purging.
 * **1-Click Database Migration Generator**: Export your Bubble schema directly to:
   - **Supabase SQL**: Enables `uuid-ossp` and `pgcrypto`, configures Row Level Security (`ENABLE ROW LEVEL SECURITY;`) with starter authenticated policies, automated `handle_updated_at()` triggers, Option Sets as PostgreSQL `ENUM`, and deferred foreign key constraints.
   - **PostgreSQL**: Transactional DDL (`BEGIN; ... COMMIT;`) with custom enums, type conversions (`geographic address` to `JSONB`, lists to `JSONB DEFAULT '[]'::jsonb`), and B-tree indexes on foreign keys and creation dates.
@@ -195,8 +196,9 @@ For technical details, see the [Cloud Direct Sync Guide](docs/cloud-sync-guide.m
 * **Unconstrained Search Detection**: Identifies `Do a search for` queries that lack server-side constraints.
 * **Client vs Server Ratio**: Highlights heavy client operations that could run more efficiently on backend workers.
 
-### 6. AST Dead Code Detector
+### 6. AST Dead Code Detector & Data Architecture Auditor
 * **Health Score**: Computes an overall score (0-100%) and letter grade (A+ to F).
+* **Data Architecture & Anti-Pattern Auditor**: Static analysis engine identifying unbounded lists on parent records (`list of [Thing]`), wide table payload bloat (>25 fields or heavy text columns), client-side in-memory filter abuse (`Search for X:filter(...)`), and dangling relations, complete with a 0-100 Data Health Score and step-by-step refactoring recommendations.
 * **AST Scanner**: Inspects nested groups, popups, repeating groups, workflows, custom events, styles, and plugins.
 * **DAG Dependency Graph**: Displays relational dependencies between visual elements and workflows.
 * **Cleanup Assistant**: Generates cleanup manifests for unreferenced elements.
@@ -216,6 +218,7 @@ For technical details, see the [Cloud Direct Sync Guide](docs/cloud-sync-guide.m
 * **HTTP Basic Auth**: Injects credentials for password-protected Bubble development applications.
 
 ### 9. Webhooks, cURL & API Studio
+* **Reverse OpenAPI 3.1 & Interactive API Documentation Generator**: Introspects Bubble backend workflows and custom data types to produce compliant OpenAPI 3.1.0 specifications in JSON and YAML formats. Includes interactive endpoint testing, parameter schema inspection, and copy-pasteable client SDK snippets (cURL with Bearer token, TypeScript fetch, and Python requests).
 * **Local Webhook Mock Server (Port 4040)**: Starts an embedded local HTTP listener in Electron with CORS support to capture test webhooks from Stripe, SendGrid, WhatsApp, and Shopify in real time. Inspect headers, query params, and raw JSON, or retransmit payloads directly to your Bubble backend workflows with one click.
 * **Webhook Inspector & Dispatcher**: Inspects incoming HTTP payloads, query parameters, and response status codes with offline simulation presets.
 * **cURL to API Connector**: Converts curl commands into Bubble API Connector parameters and headers.

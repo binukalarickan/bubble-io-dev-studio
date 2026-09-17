@@ -24,7 +24,8 @@ import {
   Info,
   History,
   ShieldCheck,
-  Puzzle
+  Puzzle,
+  Database
 } from 'lucide-react';
 import { AppDiffResult, AuditHealthReport, DeadItem, ProjectProfile } from '../types';
 import { AuditEngine } from '../core/audit/auditEngine';
@@ -33,6 +34,7 @@ import { SafeCleanerEngine } from '../core/audit/safeCleaner';
 import { InteractiveDagGraph } from '../components/InteractiveDagGraph';
 import { SafeCleanupModal } from '../components/SafeCleanupModal';
 import { PluginAuditor, PluginAuditSummary } from '../core/audit/pluginAuditor';
+import { DataArchitectureAuditPanel } from '../components/DataArchitectureAuditPanel';
 import { toast } from '../core/toast/toastManager';
 
 interface AuditViewProps {
@@ -40,7 +42,7 @@ interface AuditViewProps {
   onLog: (module: 'audit', message: string, level?: 'info' | 'success' | 'warn' | 'error') => void;
 }
 
-type AuditSubTab = 'overview' | 'explorer' | 'graph' | 'plugins' | 'diff' | 'cleaner' | 'export';
+type AuditSubTab = 'overview' | 'explorer' | 'graph' | 'plugins' | 'diff' | 'cleaner' | 'export' | 'data_architecture';
 
 export const AuditView: React.FC<AuditViewProps> = ({ activeProject, onLog }) => {
   const [subTab, setSubTab] = useState<AuditSubTab>('overview');
@@ -339,6 +341,10 @@ export const AuditView: React.FC<AuditViewProps> = ({ activeProject, onLog }) =>
         <button onClick={() => setSubTab('export')} className={`btn btn-sm ${subTab === 'export' ? 'btn-primary' : 'btn-secondary'}`} style={{ border: 'none' }}>
           <Download size={13} />
           <span>CI/CD & SARIF Export</span>
+        </button>
+        <button onClick={() => setSubTab('data_architecture')} className={`btn btn-sm ${subTab === 'data_architecture' ? 'btn-primary' : 'btn-secondary'}`} style={{ border: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Database size={13} color="var(--accent-cyan)" />
+          <span>Data Architecture Health</span>
         </button>
       </div>
 
@@ -930,6 +936,13 @@ export const AuditView: React.FC<AuditViewProps> = ({ activeProject, onLog }) =>
             </pre>
           </div>
         </div>
+      )}
+
+      {/* =====================================================================
+          SUBTAB 8: DATA ARCHITECTURE & ANTI-PATTERN AUDIT
+          ===================================================================== */}
+      {subTab === 'data_architecture' && (
+        <DataArchitectureAuditPanel activeProject={activeProject} onLog={onLog} />
       )}
 
       {/* Safe Cleanup Diff Modal */}

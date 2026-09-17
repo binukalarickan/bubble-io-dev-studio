@@ -11,6 +11,7 @@ export interface ElectronAPI {
   receiveFromMain: (channel: string, func: (...args: any[]) => void) => () => void;
   openExternal: (url: string) => Promise<void>;
   fetchHttp: (url: string, headers?: Record<string, string>) => Promise<{ ok: boolean; status?: number; data?: any; error?: string }>;
+  httpRequest?: (options: { url: string; method?: string; headers?: Record<string, string>; body?: any }) => Promise<{ ok: boolean; status?: number; data?: any; error?: string }>;
   secureEncrypt: (plainText: string) => Promise<string>;
   secureDecrypt: (cipherText: string) => Promise<string>;
   isEncryptionAvailable: () => Promise<boolean>;
@@ -95,6 +96,9 @@ const api: ElectronAPI = {
   },
   fetchHttp: async (url: string, headers?: Record<string, string>) => {
     return ipcRenderer.invoke('http:fetch', url, headers);
+  },
+  httpRequest: async (options: { url: string; method?: string; headers?: Record<string, string>; body?: any }) => {
+    return ipcRenderer.invoke('http:request', options);
   },
   secureEncrypt: async (plainText: string) => {
     return ipcRenderer.invoke('secure:encrypt', plainText);

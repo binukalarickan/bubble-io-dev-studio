@@ -37,6 +37,7 @@ import { ApiConnectorCallConfig, ApiConnectorHeader, ApiConnectorParameter, Open
 import { ApiStudioEngine, WebhookPreset, SchemaValidationResult } from '../core/api-studio/apiStudioEngine';
 import { PluginSdkGenerator } from '../components/PluginSdkGenerator';
 import { LocalWebhookServerPanel } from '../components/LocalWebhookServerPanel';
+import { OpenApiExportPanel } from '../components/OpenApiExportPanel';
 import { toast } from '../core/toast/toastManager';
 import { APP_VERSION } from '../version';
 
@@ -45,7 +46,7 @@ interface ApiStudioViewProps {
   onLog: (module: 'api-studio', message: string, level?: 'info' | 'success' | 'warn' | 'error') => void;
 }
 
-type ApiStudioSubTab = 'webhooks' | 'local_server' | 'curl_import' | 'openapi' | 'connector' | 'plugin_sdk';
+type ApiStudioSubTab = 'webhooks' | 'local_server' | 'curl_import' | 'openapi' | 'connector' | 'plugin_sdk' | 'openapi_export';
 
 // Sample OpenAPI 3.0 Specification Preset for rapid testing
 const SAMPLE_OPENAPI_SPEC = {
@@ -620,6 +621,14 @@ export const ApiStudioView: React.FC<ApiStudioViewProps> = ({ activeProject, onL
         >
           <Sparkles size={13} />
           <span>Plugin Action SDK Builder</span>
+        </button>
+        <button
+          onClick={() => setSubTab('openapi_export')}
+          className={`btn btn-sm ${subTab === 'openapi_export' ? 'btn-primary' : 'btn-secondary'}`}
+          style={{ border: 'none', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px' }}
+        >
+          <Globe size={13} color="var(--accent-cyan)" />
+          <span>OpenAPI 3.1 Exporter & Docs</span>
         </button>
       </div>
 
@@ -1476,6 +1485,13 @@ export const ApiStudioView: React.FC<ApiStudioViewProps> = ({ activeProject, onL
           ===================================================================== */}
       {subTab === 'plugin_sdk' && (
         <PluginSdkGenerator onLog={onLog} />
+      )}
+
+      {/* =====================================================================
+          SUBTAB 6: REVERSE OPENAPI 3.1 & INTERACTIVE API DOCS EXPORTER
+          ===================================================================== */}
+      {subTab === 'openapi_export' && (
+        <OpenApiExportPanel activeProject={activeProject} onLog={onLog} />
       )}
     </div>
   );

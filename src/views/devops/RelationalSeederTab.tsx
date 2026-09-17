@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Sparkles, Share2, FileSpreadsheet, Copy, Play, Upload } from 'lucide-react';
 import { BubbleSchema, ProjectProfile, SeedExecutionPlan } from '../../types';
 import { RelationalSeederEngine } from '../../core/devops/relationalSeeder';
+import { LiveSeederModal } from '../../components/LiveSeederModal';
 import { toast } from '../../core/toast/toastManager';
 
 interface RelationalSeederTabProps {
@@ -24,6 +25,7 @@ export const RelationalSeederTab: React.FC<RelationalSeederTabProps> = ({
   const [seedPlan, setSeedPlan] = useState<SeedExecutionPlan | null>(null);
   const [seedValidation, setSeedValidation] = useState<{ valid: boolean; errors: string[]; warnings: string[] } | null>(null);
   const [isSeeding, setIsSeeding] = useState(false);
+  const [isLiveSeederModalOpen, setIsLiveSeederModalOpen] = useState(false);
 
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -188,6 +190,15 @@ export const RelationalSeederTab: React.FC<RelationalSeederTabProps> = ({
               <Upload size={13} className={isSeeding ? 'spin' : ''} />
               <span>{isSeeding ? 'Seeding...' : 'Execute Live Seed'}</span>
             </button>
+            <button
+              onClick={() => setIsLiveSeederModalOpen(true)}
+              className="btn btn-primary btn-sm"
+              style={{ background: 'linear-gradient(135deg, #06b6d4 0%, #6366f1 100%)', border: 'none' }}
+              title="Launch visual wizard with topological dependency sorting, Faker data generators, and rate limiting"
+            >
+              <Sparkles size={13} />
+              <span>Live Synthetic Seeder (Wizard)</span>
+            </button>
           </div>
         </div>
 
@@ -237,6 +248,14 @@ export const RelationalSeederTab: React.FC<RelationalSeederTabProps> = ({
           </div>
         </div>
       )}
+      {/* Live Relational Synthetic Seeder Modal */}
+      <LiveSeederModal
+        isOpen={isLiveSeederModalOpen}
+        onClose={() => setIsLiveSeederModalOpen(false)}
+        schema={schema}
+        activeProject={activeProject}
+        onLog={onLog}
+      />
     </div>
   );
 };

@@ -61,3 +61,15 @@ Generates code templates for custom Bubble plugins:
 * **Client-Side Actions (CSA)**: Browser JavaScript functions with element access.
 * **Parameter Manifest**: JSON definitions for action parameters, return values, and input types.
 * **TypeScript Boilerplate**: Download ready-to-edit `.ts` source files and `package.json`.
+
+---
+
+## 5. Reverse OpenAPI 3.1 Exporter & Interactive API Documentation
+
+Export standard OpenAPI 3.1 specifications directly from your Bubble application blueprint:
+
+* **Workflow API Inspection**: Traverses backend API workflows (`/api/1.1/wf/...`), mapping defined parameters into request body schemas.
+* **Data API Introspection**: Converts database types into OpenAPI `components.schemas` and creates standard REST endpoints (`GET`, `POST`, `PATCH`, `DELETE`) under `/api/1.1/obj/{type}` with pagination and query constraints.
+* **Authentication Configuration**: Includes Bearer token security schemes configured for Bubble private API tokens.
+* **Export Formats**: Download specs as standard formatted JSON or clean YAML without third-party dependencies.
+* **Client SDK Snippets**: Generate copy-pasteable API integration code for cURL (with Bearer headers), TypeScript (using native `fetch` and typed interfaces), and Python (using `requests`).
