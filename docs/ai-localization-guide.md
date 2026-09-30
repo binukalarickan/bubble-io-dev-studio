@@ -12,6 +12,7 @@ The module contains five main sections:
 - **Views**: Single language view and multi-language matrix view.
 - **Filtering**: Filter by category (`UI`, `Error`, `Notification`, `Email`, `Option Set`) and translation status (`All`, `Pending`, `Ready / Translated`).
 - **Batch Processing**: Run single-string translations or batch translate across multiple target languages simultaneously.
+- **Subscription Providers**: Choose **Claude Pro / Max / Team** or **ChatGPT Plus / Pro / Team** to translate with a signed-in plan instead of an API key. Each string starts the Claude Code or Codex CLI, so large batches are slower than with an API key, and requests count against your plan's usage limits. The cost estimator doesn't cover these providers.
 - **CSV Import & Merge**: Import external Bubble App Text or database CSV files. The import merges new strings with existing ones while preserving extracted Option Sets without duplicates.
 - **Blueprint Isolation**: Importing CSVs or `.bubble` files in this module operates only on the local translation workspace and does not modify the project's saved `.bubble` blueprint.
 - **Sync Blueprint**: Use the `Sync .bubble` button to re-extract strings and Option Sets directly from the attached blueprint.

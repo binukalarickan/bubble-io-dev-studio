@@ -247,7 +247,7 @@ For technical details, see the [Cloud Direct Sync Guide](docs/cloud-sync-guide.m
 | Shortcut | Action |
 | :--- | :--- |
 | `Ctrl + K` / `Cmd + K` | Global Command Palette (navigation, actions, project switcher) |
-| `Ctrl + I` / `Cmd + I` | Bubble AI Copilot (natural language queries and regex generator) |
+| `Ctrl + I` / `Cmd + I` | Bubble AI Copilot (natural language queries and regex generator; uses a Gemini, OpenAI or Groq key, or a signed-in Claude/ChatGPT plan) |
 | `Ctrl + B` / `Cmd + B` | Run quick database backup |
 | `Ctrl + \`` | Toggle log console drawer |
 

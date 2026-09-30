@@ -16,6 +16,7 @@ DocGen provides two modes via the top toolbar:
 - **Chapter 3, Workflows & Automations**: Groups workflows into coherent flows (authentication, data mutations, and external webhook integrations).
 - **Chapter 4, Security Governance**: Documents data privacy policies, access rules, and client-side exposure risks.
 - **Provider Support**: Works with Google Gemini, OpenAI, Anthropic Claude, Groq, local Ollama (`llama3:8b`), or a deterministic offline synthesizer.
+- **Claude / ChatGPT Subscriptions**: If the active provider is **Claude Pro / Max / Team** or **ChatGPT Plus / Pro / Team**, narratives and AI chapter drafts run through your signed-in plan and don't need an API key. Sign in under **Settings → AI Providers**; see the [Settings guide](settings-guide.md).
 
 ### Raw Data Dictionary Mode
 - A concise reference listing tables, field specifications, data types, constraints, and raw Option Set values.
