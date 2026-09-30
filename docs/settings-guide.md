@@ -1,35 +1,71 @@
-# ⚙️ Settings & Integrations Hub Guide (v3.0.0)
+# Settings & Integrations Guide
 
-The **Settings & Integrations Hub** manages multi-provider AI credentials, Bubble workspace connections, zero-telemetry security storage, and client-side system diagnostics.
+The Settings & Integrations view manages AI provider credentials, workspace connections, cloud sync settings, and application updates.
 
 ---
 
-## 1. Subtabs Overview
+## Subtabs Overview
 
-### 1. 🔑 AI Providers & Keys (`keys`)
-- **Multi-Provider LLM Engine**: Configure API keys for **Google Gemini** (Gemini 2.0 Flash / Pro), **Anthropic Claude** (Claude 3.7 Sonnet / Haiku), **OpenAI** (GPT-4o / 4o-mini), **Groq** (Llama 3.3 70B), **xAI** (Grok 2), **OpenCode Router**, **OpenRouter**, and **Ollama** (Local/Offline).
-- **Live AI Connection Test**: Test connectivity, round-trip latency (ms), and model accessibility with 1 click.
-- **Show/Hide Key Toggle**: Mask or unmask API keys for secure screen-sharing.
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                             Settings & Integrations                                    │
+├────────────────────┬────────────────────┬────────────────────┬─────────────────────────┤
+│ AI Providers       │ Bubble Apps        │ Preferences        │ Updates & System        │
+│   • API Keys       │   • Connect Wizard │   • Theme Select   │   • Auto-Updater        │
+│   • Local Ollama   │   • Cloud Sync     │   • Auto Reports   │   • Data Retention      │
+│   • Latency Test   │   • Downloads Watch│   • Storage Purge  │   • System Diagnostics  │
+│   • Custom Models  │   • Manual Import  │                    │   • Diagnostic Bundle   │
+└────────────────────┴────────────────────┴────────────────────┴─────────────────────────┘
+```
 
-### 2. 🗂️ Bubble Apps & Workspaces (`workspaces`)
-- **Workspace Manager**: View all connected Bubble applications with environment badges (`VERSION-TEST`, `LIVE`), custom domains, and App IDs.
-- **Manual Workspace Editor Modal (`Edit Details`)**: Directly edit application title, Bubble App ID, target environment, custom domain, Data API URL, private bearer API token, and Agency Plan HTTP Basic Auth credentials (username & password).
-- **Full Workspace Bundle Archive (`.bds`)**: 1-Click export and import of portable workspace configurations (schemas, credentials, snapshots, and attached blueprints).
-- **Live Health & Ping**: Real-time HTTP reachability check and latency measurement.
-- **Blueprint Attachment**: Attach or replace `.bubble` JSON export files to unlock automated schema extraction, workflow DAGs, and page route catalogs.
-- **5-Step Verification Pills**: Visual verification status across App Reachability, Token Security, AI Provider, Blueprint sync, and Audit readiness.
+---
 
-### 3. 🎨 Theme & Studio Preferences (`preferences`)
-- **Theme Mode**: Switch between **Cyber Slate** (Dark Theme) and **Clean Studio** (Light Theme).
-- **Automated Report Saving**: Toggle automatic local persistence for HTML, SARIF, and JSON test reports.
-- **Local Storage Controller**: Manage and purge IndexedDB and localStorage caches.
+## Module Sections
 
-### 4. 💻 System Diagnostics (`diagnostics`)
-- **Diagnostic Metrics**: Quick glance at Studio Version, Connected Workspaces count, and Active AI Model.
-- **Environment Summary**: Complete runtime details including IndexedDB status and client platform.
-- **Export Diagnostics JSON**: 1-Click download of a diagnostic bundle for troubleshooting and bug reporting.
+### 1. AI Providers & Keys
+- **Supported Providers**: Configure credentials for:
+  - **Google Gemini** (`gemini-2.0-flash`, `gemini-1.5-pro`)
+  - **Anthropic Claude** (`claude-3-7-sonnet`, `claude-3-5-haiku`)
+  - **OpenAI** (`gpt-4o`, `gpt-4o-mini`, `o3-mini`)
+  - **Groq** (`llama-3.3-70b-versatile`, `qwen/qwen3.8-27b`)
+  - **DeepSeek** (`deepseek-chat`, `deepseek-reasoner`)
+  - **xAI** (`grok-2`)
+  - **OpenRouter** (unified API aggregator)
+  - **Ollama** (local offline execution on `http://localhost:11434`, with automatic model detection via `/api/tags`).
+- **Custom Model Identifiers**: Enter any custom model name or fine-tuned variant.
+- **Connection Test**: Test network reachability and round-trip response time in milliseconds.
+- **Key Visibility**: Toggle between masked and unmasked display for screen sharing.
 
-### 5. ℹ️ About & Credits (`about`)
-- **Release Edition**: Version `v3.0.0` (Production Stable Suite).
-- **Author Credits**: Designed and built by **Alexandr Motologa | MTLG Labs** ([mtlglabs.space](https://mtlglabs.space) • [mtlg.site](https://mtlg.site)).
-- **Ecosystem & Support Links**: MTLG Labs Ecosystem, Personal Portfolio Hub, GitHub repository, Buy Me a Coffee, and direct email (`contact@mtlglabs.space`).
+### 2. Bubble Apps & Workspaces
+- **Connection Wizard**:
+  - **Step 1: App Identity**: Enter your Application Name, App ID (or URL), environment (`version-test` or `version-live`), and optional custom domain.
+  - **Step 2: Authentication & Security**: Enter your Private API Bearer Token, enable Data API access, backups, and privacy checks. Includes optional HTTP Basic Auth for password-protected environments.
+  - **Step 3: AI Setup**: Select a default AI provider and model.
+  - **Step 4: Blueprint Export**: Select Cloud Direct Sync, Downloads Watcher, or manual file dropzone.
+  - **Step 5: Pre-Flight Checklist**: Review settings before opening the workspace.
+- **Workspace Switching**: Switch between connected applications with environment and latency indicators.
+- **Workspace Bundle Export (`.bds`)**: Export or import portable workspace configuration files (schemas, credentials, snapshots, and attached blueprints).
+
+### 3. Preferences
+- **Theme Selection**: Switch between **Cyber Slate** (dark theme) and **Clean Studio** (light theme).
+- **Automated Report Saving**: Toggle automatic local saving of HTML, SARIF, and JSON reports.
+- **Local Storage Management**: Inspect storage usage and clear IndexedDB or localStorage caches.
+
+### 4. Updates & System Diagnostics
+- **Automatic Updates**: Powered by `electron-updater` and GitHub Releases (`alexandrmotologa/bubble-io-dev-studio`).
+- **Update Checks**: Checks in the background for new versions on startup.
+- **Progress Tracking**: Displays download progress and transfer speeds.
+- **Restart Prompt**: Choose between restarting immediately or postponing until later.
+- **Data Retention Across Updates**:
+  - Updates only modify the application binary directory (`%LOCALAPPDATA%\Programs\bubble-io-dev-studio\`).
+  - Workspaces, project settings, API tokens, snapshots, and IndexedDB databases remain in `%APPDATA%\bubble-io-dev-studio\` and are preserved during updates.
+
+### 5. Diagnostics
+- **Metrics Summary**: Displays the current studio version, number of connected projects, and active AI model.
+- **Environment Details**: Runtime versions for Electron, Node.js, and Chromium, plus IndexedDB status.
+- **Diagnostic Export**: Download a diagnostic JSON bundle for troubleshooting and bug reports.
+
+### 6. About & Support
+- Version details and release channel.
+- Project author links and repository references.
+- Direct support contact: `contact@mtlglabs.space`.

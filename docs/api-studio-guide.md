@@ -1,78 +1,75 @@
-# 🌐 Webhooks & API Studio Guide (v3.0.0)
+# Webhooks & API Studio Guide
 
-The **Webhooks & API Studio** simplifies external integrations, cURL importing, OpenAPI 3.0 specification mapping, Bubble API Connector scaffolding, and Bubble Plugin Builder action development.
+Webhooks & API Studio provides tools to test webhook endpoints, convert cURL commands into Bubble API Connector calls, and generate boilerplate code for Bubble plugins.
 
 ---
 
-## 1. Live Webhook Inspector, Simulator & Replay
+## 1. Webhook Inspector, Simulator & Replay
 
 * **Endpoint Listener URL**:
   ```text
   https://[your-app].bubbleapps.io/[version]/api/1.1/wf/[endpoint_name]
   ```
-* **Send Test Webhook**: Dispatch simulated HTTP requests (`POST`, `GET`, `PUT`, `PATCH`, `DELETE`) to test backend workflow triggers.
-* **Enterprise Presets**: Instant mock payloads for:
+* **Send Test Requests**: Dispatch simulated HTTP requests (`POST`, `GET`, `PUT`, `PATCH`, `DELETE`) to test backend workflow triggers.
+* **Pre-configured Payloads**: Mock data templates for:
   - **Stripe**: `payment_intent.succeeded`, `customer.subscription.created`, `invoice.payment_failed`, `charge.refunded`
   - **SendGrid**: `email.delivered`, `email.opened`, `email.bounced`, `email.spamreport`
   - **Shopify**: `orders/create`, `orders/paid`, `orders/fulfilled`, `customers/create`
   - **GitHub**: `push`, `pull_request`, `issues`, `workflow_run`
   - **Generic REST**: `user.signup`, `data.sync`, `billing.alert`
-* **Custom Status Codes & Latency**: Simulate `200 OK`, `201 Created`, `400 Bad Request`, `401 Unauthorized`, `404 Not Found`, `500 Internal Server Error`, and view real-time latency (ms).
-* **Instant Replay**: Re-dispatch recorded events with single-click replay or live payload modification.
-* **Search & Export**: Filter webhook history and export logs as formatted JSON.
+* **Status Codes & Latency**: Simulate responses (`200 OK`, `201 Created`, `400 Bad Request`, `401 Unauthorized`, `404 Not Found`, `500 Internal Server Error`) and measure round-trip latency in milliseconds.
+* **Replay**: Resend recorded events with optional payload edits.
+* **Search & Export**: Filter event history and export request logs as JSON.
 
 ---
 
-## 2. cURL ➔ Bubble API Connector Parser
+## 2. Local Webhook Mock Server & Payload Inspector (Port 4040)
 
-Paste any standard or complex cURL command from external API documentation (Stripe, Twilio, SendGrid, OpenAI, etc.):
+For local development and testing webhooks from external services before setting up live Bubble endpoints:
+
+* **Local HTTP Listener**: Starts a local HTTP server on a configurable port (default `4040`, e.g., `http://localhost:4040/webhook`).
+* **CORS Support**: Handles preflight `OPTIONS` requests automatically so local web apps and test scripts can send requests without origin errors.
+* **Live Payload Capture**: Captures every incoming request in real time, recording method, path, HTTP headers, query parameters, client IP, raw body text, and parsed JSON objects.
+* **Forward to Bubble**: Retransmits captured payloads directly to your active project's Bubble backend workflow URL (`/api/1.1/wf/...`) with one click.
+* **Mock Presets**: Built-in test payloads for Stripe, SendGrid, WhatsApp, and Shopify let you test payload parsing offline without third-party services.
+* **cURL Command Generator**: Generates ready-to-run terminal commands to test the local endpoint directly.
+
+---
+
+## 3. cURL to Bubble API Connector Parser
+
+Paste a cURL command from any third-party API documentation:
 
 ```bash
-curl -X POST https://api.stripe.com/v1/payment_intents \
-  -H "Authorization: Bearer sk_test_..." \
-  -H "Content-Type: application/json" \
-  -d '{"amount": 2000, "currency": "usd", "customer": "cus_991823"}'
+curl -X POST https://api.stripe.com/v1/customers \
+  -u sk_test_...: \
+  -d "email=jenny.rosen@example.com"
 ```
 
-* **Multi-Format Support**: Automatically parses headers, query parameters, basic authentication (`-u user:pass`), bearer tokens, multipart/form-data (`-F`), `--data-urlencode`, and JSON body payloads.
-* **Interactive Flag Editors**: Configure `Private`, `Optional`, and `Send in Querystring` toggles for each header and parameter.
-* **One-Click Export**: Copy Bubble API Connector JSON configuration or reverse-engineer executable cURL syntax.
+The parser separates the command into Bubble API Connector fields:
+* **Method & URL**: `POST` to `https://api.stripe.com/v1/customers`
+* **Headers**: `Authorization: Basic ...`
+* **Parameters / Body**: Form-encoded or JSON body parameters mapped to key-value rows.
+* **Copy**: Copy formatted values directly into the Bubble Plugin editor or API Connector tab.
 
 ---
 
-## 3. Swagger / OpenAPI 3.0 Importer
+## 4. Bubble Plugin Builder SDK Scaffolder
 
-* **Multi-Format Input**: Upload `.json`, `.yaml`, or `.yml` files, fetch via URL, or paste raw specification text.
-* **Tag-Based Explorer**: Interactive breakdown of all endpoints grouped by OpenAPI Tags or Paths.
-* **Selective Batch Export**: Select specific endpoints or entire categories with checkboxes and batch-export directly to Bubble API Connector schema format.
-* **Seamless Scaffolding**: Send any selected OpenAPI operation directly to the API Connector Scaffolder with one click.
-
----
-
-## 4. API Connector Schema & Query Scaffolder
-
-* **Visual Configurator**: Design API calls with URL parameters, headers, and dynamic body structures.
-* **JSON Schema Validator**: Validate JSON response payloads against expected types, detecting missing fields and schema discrepancies.
-* **Multi-Target Code Snippets**:
-  - 🖥️ **Bubble Client-Side**: JavaScript Toolbox / HTML element fetch dispatcher.
-  - ⚡ **Bubble Server-Side (SSA)**: Node.js async backend execution.
-  - 📡 **cURL Command**: Reverse-engineered command line syntax.
-  - 📦 **API Connector JSON**: Ready for direct import into Bubble.io settings.
+Generates code templates for custom Bubble plugins:
+* **Server-Side Actions (SSA)**: Node.js asynchronous handlers with error boundaries.
+* **Client-Side Actions (CSA)**: Browser JavaScript functions with element access.
+* **Parameter Manifest**: JSON definitions for action parameters, return values, and input types.
+* **TypeScript Boilerplate**: Download ready-to-edit `.ts` source files and `package.json`.
 
 ---
 
-## 5. Bubble Plugin Action SDK Builder
+## 5. Reverse OpenAPI 3.1 Exporter & Interactive API Documentation
 
-Generate production-grade code for custom Bubble plugins (Server-Side Actions & Client-Side Actions):
+Export standard OpenAPI 3.1 specifications directly from your Bubble application blueprint:
 
-1. **Choose Template / Action Name**: Stripe Payment, OpenAI Chat, SendGrid Mailer, or Custom REST.
-2. **Input & Return Parameters**: Strongly typed fields (`text`, `number`, `boolean`, `date`, `object`, `list_text`, `list_number`, `file`).
-3. **Advanced Security & Reliability**:
-   - 🔑 Inject Bubble Private API Keys (`context.keys`).
-   - 🔄 Automatic retry policy with exponential backoff.
-   - ⏱️ Configurable execution timeout with `AbortController`.
-4. **Export Artifacts**:
-   - ⚡ **Server-Side Action (SSA)** with async fetch and input validation.
-   - 🖥️ **Client-Side Action (CSA)** with browser custom event dispatchers.
-   - 📝 **TypeScript Interfaces** for full type-safety.
-   - 📦 **`package.json`** snippet with recommended dependencies (`axios`, `zod`, `p-retry`).
+* **Workflow API Inspection**: Traverses backend API workflows (`/api/1.1/wf/...`), mapping defined parameters into request body schemas.
+* **Data API Introspection**: Converts database types into OpenAPI `components.schemas` and creates standard REST endpoints (`GET`, `POST`, `PATCH`, `DELETE`) under `/api/1.1/obj/{type}` with pagination and query constraints.
+* **Authentication Configuration**: Includes Bearer token security schemes configured for Bubble private API tokens.
+* **Export Formats**: Download specs as standard formatted JSON or clean YAML without third-party dependencies.
+* **Client SDK Snippets**: Generate copy-pasteable API integration code for cURL (with Bearer headers), TypeScript (using native `fetch` and typed interfaces), and Python (using `requests`).

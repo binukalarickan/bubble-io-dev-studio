@@ -51,6 +51,9 @@ export interface GlobalSettings {
   ollamaUrl?: string;
   defaultAiModel: string;
   autoSaveReports: boolean;
+  autoBackupInterval?: 'disabled' | '6h' | '12h' | '24h';
+  autoBackupRetention?: number;
+  autoBackupBeforeSync?: boolean;
   projects: ProjectProfile[];
 }
 
@@ -344,10 +347,10 @@ export type TranslationProviderType =
   | 'gemini' 
   | 'openrouter' 
   | 'groq' 
+  | 'deepseek'
   | 'xai' 
   | 'opencode' 
-  | 'ollama' 
-  | 'mock';
+  | 'ollama';
 
 export interface TranslationItem {
   id: string;
@@ -373,6 +376,7 @@ export interface TranslationJobConfig {
   glossary?: Record<string, string>;
   apiKey?: string;
   ollamaUrl?: string;
+  customPromptInstructions?: string;
 }
 
 export interface TranslationJobResult {
@@ -546,7 +550,9 @@ export type WuOperationType =
   | 'recursive_scheduled_loop' 
   | 'unindexed_sort'
   | 'heavy_custom_state'
-  | 'unbatched_api_call';
+  | 'unbatched_api_call'
+  | 'recursive_zero_delay'
+  | 'bulk_on_list_overuse';
 
 export interface WuBottleneck {
   id: string;
@@ -1024,3 +1030,181 @@ export interface RollbackExecutionResult {
   failedCount: number;
   logs: string[];
 }
+
+export interface UpdaterStatusData {
+  status: 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error' | 'dev-mode';
+  version?: string;
+  releaseDate?: string;
+  releaseNotes?: string;
+  percent?: number;
+  transferred?: number;
+  total?: number;
+  bytesPerSecond?: number;
+  error?: string;
+  message?: string;
+  currentVersion?: string;
+}
+
+export interface BubbleAuthStatus {
+  isAuthenticated: boolean;
+  userEmail?: string;
+}
+
+export interface BubbleSyncResult {
+  success: boolean;
+  fileName?: string;
+  data?: any;
+  error?: string;
+}
+
+// ============================================================================
+// 15. OPENAPI 3.1 EXPORTER & API DOCS TYPES
+// ============================================================================
+export interface OpenApiExportOptions {
+  includeWorkflowApis: boolean;
+  includeDataApis: boolean;
+  apiVersion: string;
+  serverBaseUrl: string;
+  requireAuthentication: boolean;
+  format: 'json' | 'yaml';
+}
+
+export interface ExportedOpenApiEndpoint {
+  path: string;
+  method: 'get' | 'post' | 'put' | 'delete' | 'patch';
+  summary: string;
+  description?: string;
+  parameters: {
+    name: string;
+    in: 'query' | 'header' | 'path';
+    required: boolean;
+    schema: Record<string, any>;
+    description?: string;
+  }[];
+  requestBody?: {
+    required: boolean;
+    content: Record<string, { schema: Record<string, any> }>;
+  };
+  responses: Record<string, { description: string; content?: Record<string, any> }>;
+  tags: string[];
+}
+
+export interface ExportedOpenApiSpec {
+  openapi: string;
+  info: {
+    title: string;
+    version: string;
+    description: string;
+  };
+  servers: { url: string; description: string }[];
+  paths: Record<string, any>;
+  components: {
+    securitySchemes: Record<string, any>;
+    schemas: Record<string, any>;
+  };
+}
+
+// ============================================================================
+// 16. DATA ARCHITECTURE & RELATIONAL ANTI-PATTERN AUDITOR TYPES
+// ============================================================================
+export type AntiPatternSeverity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'INFO';
+export type AntiPatternType = 
+  | 'UNBOUNDED_LIST'
+  | 'WIDE_TABLE_BLOAT'
+  | 'MISSING_SEARCH_INDEX'
+  | 'DANGLING_GHOST_RELATION'
+  | 'CLIENT_SIDE_FILTER_ABUSE';
+
+export interface DataAntiPatternIssue {
+  id: string;
+  type: AntiPatternType;
+  severity: AntiPatternSeverity;
+  typeName: string;
+  fieldName?: string;
+  title: string;
+  description: string;
+  impact: string;
+  wuWasteRisk: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  recommendedRefactor: string;
+  diagramSnippet?: string;
+}
+
+export interface DataArchitectureAuditReport {
+  timestamp: string;
+  dataHealthScore: number; // 0 to 100
+  totalTypesAudited: number;
+  totalFieldsAudited: number;
+  criticalIssuesCount: number;
+  highIssuesCount: number;
+  mediumIssuesCount: number;
+  issues: DataAntiPatternIssue[];
+  estimatedWuSavingsPercent: number;
+}
+
+// ============================================================================
+// 17. LIVE RELATIONAL SYNTHETIC SEEDER TYPES
+// ============================================================================
+export interface SeederFieldRule {
+  fieldName: string;
+  fieldType: string;
+  generatorType: 'faker_name' | 'faker_email' | 'faker_phone' | 'faker_date' | 'faker_address' | 'faker_number' | 'faker_boolean' | 'static_value' | 'relation_lookup';
+  relationTargetType?: string;
+  staticValue?: any;
+  minValue?: number;
+  maxValue?: number;
+}
+
+export interface SeederTypeConfig {
+  typeName: string;
+  rowCount: number;
+  fieldRules: Record<string, SeederFieldRule>;
+  enabled: boolean;
+}
+
+export interface LiveSeederJob {
+  targetEnvironment: 'version-test' | 'custom';
+  customBaseUrl?: string;
+  apiToken: string;
+  types: SeederTypeConfig[];
+  status: 'idle' | 'running' | 'completed' | 'error' | 'paused';
+  progressCurrent: number;
+  progressTotal: number;
+  createdRecordIds: Record<string, string[]>; // typeName -> list of created Bubble IDs
+  logs: string[];
+}
+
+declare global {
+  interface Window {
+    electronAPI?: {
+      platform: string;
+      versions: {
+        node: string;
+        chrome: string;
+        electron: string;
+      };
+      sendToMain: (channel: string, data: any) => void;
+      receiveFromMain: (channel: string, func: (...args: any[]) => void) => () => void;
+      openExternal: (url: string) => Promise<void>;
+      fetchHttp: (url: string, headers?: Record<string, string>) => Promise<{ ok: boolean; status?: number; data?: any; error?: string }>;
+      httpRequest?: (options: { url: string; method?: string; headers?: Record<string, string>; body?: any }) => Promise<{ ok: boolean; status?: number; data?: any; error?: string }>;
+      secureEncrypt: (plainText: string) => Promise<string>;
+      secureDecrypt: (cipherText: string) => Promise<string>;
+      isEncryptionAvailable: () => Promise<boolean>;
+      capturePage: (url: string, width: number, height: number, headers?: Record<string, string>) => Promise<{ success: boolean; dataUrl?: string; error?: string; width?: number; height?: number }>;
+      checkForUpdates: () => Promise<any>;
+      downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
+      installUpdate: () => Promise<void>;
+      getAppInfo: () => Promise<{ currentVersion: string; isPackaged: boolean; platform: string }>;
+      bubbleSyncLogin: () => Promise<BubbleAuthStatus>;
+      bubbleSyncLogout: () => Promise<boolean>;
+      bubbleSyncCheckAuth: () => Promise<BubbleAuthStatus>;
+      bubbleSyncFetchApp: (appId: string) => Promise<BubbleSyncResult>;
+      bubbleSyncSetDownloadsWatcher: (enabled: boolean) => Promise<boolean>;
+      bubbleSyncShowInFolder: (filePath: string) => Promise<boolean>;
+      bubbleSyncExportBlueprintToDisk: (fileName: string, data: any) => Promise<{ success: boolean; filePath?: string; error?: string }>;
+      onBubbleFileDetected: (callback: (data: { fileName: string; content: any }) => void) => () => void;
+      onBrowserAppReceived?: (callback: (data: { data: any; originUrl?: string }) => void) => () => void;
+    };
+  }
+}
+

@@ -17,8 +17,24 @@ export class WuProfilerEngine {
   public static async analyzePerformance(rawBlueprintJson?: any, schema?: BubbleSchema | null): Promise<WuProfileReport> {
     const actualSchema = schema || (rawBlueprintJson ? DevOpsEngine.parseBubbleSchemaJson(rawBlueprintJson) : null);
     const realTypes = actualSchema?.dataTypes || [];
-    const rawPages = rawBlueprintJson?.pages ? Object.keys(rawBlueprintJson.pages) : [];
-    const pageList = rawPages.length > 0 ? rawPages : (realTypes.length > 0 ? ['index', 'dashboard', 'admin_portal', 'user_profile', 'checkout'] : ['index', 'dashboard']);
+    const rawPages = rawBlueprintJson?.pages 
+      ? Object.entries<any>(rawBlueprintJson.pages)
+          .map(([k, v]) => String(v?.name || v?.properties?.name || k).trim())
+          .filter(Boolean)
+      : [];
+
+    // Prioritize high-traffic core pages like index, dashboard for realistic WU distribution
+    const sortedPages = [...rawPages].sort((a, b) => {
+      const aLower = a.toLowerCase();
+      const bLower = b.toLowerCase();
+      if (aLower === 'index') return -1;
+      if (bLower === 'index') return 1;
+      if (aLower.includes('dashboard') || aLower.includes('home')) return -1;
+      if (bLower.includes('dashboard') || bLower.includes('home')) return 1;
+      return 0;
+    });
+
+    const pageList = sortedPages.length > 0 ? sortedPages : (realTypes.length > 0 ? ['index', 'dashboard', 'admin_portal', 'user_profile', 'checkout'] : ['index', 'dashboard']);
 
     const bottlenecks: WuBottleneck[] = [];
     const topConsumingPages: { pageName: string; wuPercent: number; estimatedWu: number }[] = [];
@@ -127,6 +143,41 @@ export class WuProfilerEngine {
       afterCodeSnippet: `Recursive Batching:\n  API Workflow: process_order_batch(remaining_list)\n  Action: Process first 50 items\n  Action: Schedule process_order_batch(remaining_list:minus first 50) in 3 seconds`,
       wuReductionPercent: 91,
       affectedRecordsCount: 2500
+    });
+
+    bottlenecks.push({
+      id: `wu_btn_${bIdx++}`,
+      location: `Backend Workflows > recursive_data_processor`,
+      workflowName: 'recursive_data_processor',
+      operationType: 'recursive_zero_delay',
+      severity: 'critical',
+      category: 'Backend Workflows',
+      description: `Recursive backend workflow scheduled with zero delay and no iteration limit guard. High risk of runaway recursion loop.`,
+      rootCause: `Scheduling recursive workflow calls immediately with delay: 0s without an iteration counter or circuit breaker.`,
+      estimatedMonthlyWu: 18500,
+      estimatedCostUsd: Number(((18500 / 1000) * 0.35).toFixed(2)),
+      suggestedFix: `Introduce a minimum 2-second delay between iterations and add a guard condition (iteration_count < 500).`,
+      beforeCodeSnippet: `Schedule recursive_sync\n  delay: 0 seconds\n  remaining: items:minus first 1`,
+      afterCodeSnippet: `Schedule recursive_sync\n  delay: 2 seconds\n  remaining: items:minus first 25\n  iteration: iteration_count + 1\n  Only when: iteration_count < 500 and items:count > 0`,
+      wuReductionPercent: 95,
+      affectedRecordsCount: 5000
+    });
+
+    bottlenecks.push({
+      id: `wu_btn_${bIdx++}`,
+      location: `Workflows > btn_bulk_archive > Click`,
+      operationType: 'bulk_on_list_overuse',
+      severity: 'high',
+      category: 'Database Queries',
+      description: `"Make changes to a list of things..." triggered on unbounded table query in client-side workflow.`,
+      rootCause: `Executing "Make changes to a list" directly from the browser locks table rows and triggers synchronous multi-record database writes.`,
+      estimatedMonthlyWu: 6200,
+      estimatedCostUsd: Number(((6200 / 1000) * 0.35).toFixed(2)),
+      suggestedFix: `Offload bulk modifications to a scheduled backend workflow with batching, or use database triggers.`,
+      beforeCodeSnippet: `Make changes to a list of Tickets\n  List: Search for Tickets (Status = "closed")\n  Archived = "yes"`,
+      afterCodeSnippet: `Schedule API Workflow: archive_tickets_chunk\n  Send list in chunks of 50 via backend workflow\n  Constraint: Archived = "no" and Status = "closed"`,
+      wuReductionPercent: 84,
+      affectedRecordsCount: 1200
     });
 
     // 3. Page WU Breakdown

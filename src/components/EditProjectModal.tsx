@@ -15,11 +15,15 @@ import {
   Sparkles,
   ExternalLink,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Zap,
+  RefreshCw
 } from 'lucide-react';
 import { ProjectProfile } from '../types';
 import { DevOpsEngine } from '../core/devops/devopsEngine';
 import { toast } from '../core/toast/toastManager';
+import { BubbleSyncEngine } from '../core/bubble-sync/bubbleSyncEngine';
+import { WorkflowGraphEngine } from '../core/workflows/workflowGraphEngine';
 
 interface EditProjectModalProps {
   isOpen: boolean;
@@ -54,7 +58,52 @@ export const EditProjectModal: React.FC<EditProjectModalProps> = ({
   const [showToken, setShowToken] = useState(false);
   const [showBasicPass, setShowBasicPass] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [isSyncingBubble, setIsSyncingBubble] = useState(false);
   const [testResult, setTestResult] = useState<{ reachable: boolean; latencyMs?: number; message?: string } | null>(null);
+
+  const handleGenerateFromApi = async () => {
+    if (!appId) {
+      toast.error('Please enter an Application ID first');
+      return;
+    }
+    setIsSyncingBubble(true);
+    try {
+      const targetProj = { ...project, appId, apiToken, customDomain, environment } as ProjectProfile;
+      const res = await BubbleSyncEngine.generateBlueprintFromApi(targetProj);
+      if (res.success && res.data) {
+        setBlueprintFileName(res.fileName);
+        setBlueprintExportJson(res.data);
+        const parsedSchema = DevOpsEngine.parseBubbleSchemaJson(res.data, targetProj);
+        const workflows = WorkflowGraphEngine.extractAllWorkflows(res.data);
+        setStats({
+          pagesCount: Object.keys(res.data.pages || {}).length || 1,
+          workflowsCount: workflows.length,
+          dataTypesCount: parsedSchema.dataTypes.length
+        });
+      }
+    } finally {
+      setIsSyncingBubble(false);
+    }
+  };
+
+  const handleOpenBrowserExport = async () => {
+    if (!appId) {
+      toast.error('Please enter an Application ID first');
+      return;
+    }
+    await BubbleSyncEngine.openBubbleExportInBrowser(appId, (fileName, content) => {
+      setBlueprintFileName(fileName);
+      setBlueprintExportJson(content);
+      const targetProj = { ...project, appId } as ProjectProfile;
+      const parsedSchema = DevOpsEngine.parseBubbleSchemaJson(content, targetProj);
+      const workflows = WorkflowGraphEngine.extractAllWorkflows(content);
+      setStats({
+        pagesCount: Object.keys(content.pages || {}).length || 1,
+        workflowsCount: workflows.length,
+        dataTypesCount: parsedSchema.dataTypes.length
+      });
+    });
+  };
 
   useEffect(() => {
     if (project) {
@@ -422,16 +471,41 @@ export const EditProjectModal: React.FC<EditProjectModalProps> = ({
                 </div>
               </div>
 
-              <label className="btn btn-secondary btn-sm" style={{ padding: '6px 12px', cursor: 'pointer', margin: 0 }}>
-                <Upload size={13} />
-                <span>{blueprintFileName ? 'Replace Blueprint' : 'Attach Blueprint'}</span>
-                <input
-                  type="file"
-                  accept=".json,.bubble"
-                  onChange={handleBlueprintUpload}
-                  style={{ display: 'none' }}
-                />
-              </label>
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={handleGenerateFromApi}
+                  disabled={isSyncingBubble}
+                  className="btn btn-primary btn-sm"
+                  style={{ padding: '6px 12px', gap: '5px' }}
+                  title="Generate .bubble file directly from Bubble Data API schema"
+                >
+                  <Zap size={13} className={isSyncingBubble ? 'spin' : ''} />
+                  <span>{isSyncingBubble ? 'Generating...' : '⚡ Generate from API'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleOpenBrowserExport}
+                  className="btn btn-secondary btn-sm"
+                  style={{ padding: '6px 12px', gap: '5px' }}
+                  title="Open Bubble Settings in your default browser and auto-detect export"
+                >
+                  <ExternalLink size={13} color="var(--accent-cyan)" />
+                  <span>Browser Export</span>
+                </button>
+
+                <label className="btn btn-secondary btn-sm" style={{ padding: '6px 12px', cursor: 'pointer', margin: 0 }}>
+                  <Upload size={13} />
+                  <span>{blueprintFileName ? 'Replace File' : 'Attach File'}</span>
+                  <input
+                    type="file"
+                    accept=".json,.bubble"
+                    onChange={handleBlueprintUpload}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+              </div>
             </div>
 
             {/* Computed Endpoints Preview & Test Connection */}

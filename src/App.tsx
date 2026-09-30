@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 import { GlobalSettings, LogEntry, NavigationTab, ProjectProfile, ThemeMode } from './types';
 import { ProjectStore } from './core/storage/projectStore';
 import { Sidebar } from './components/Sidebar';
@@ -8,24 +8,33 @@ import { ConnectAppModal } from './components/ConnectAppModal';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
 import { CommandPalette } from './components/CommandPalette';
 import { StatusBar } from './components/StatusBar';
-import { DashboardView } from './views/DashboardView';
-import { DevOpsView } from './views/DevOpsView';
-import { SecurityView } from './views/SecurityView';
-import { WuProfilerView } from './views/WuProfilerView';
-import { AuditView } from './views/AuditView';
-import { ApiStudioView } from './views/ApiStudioView';
-import { TranslatorView } from './views/TranslatorView';
-import { VisualTesterView } from './views/VisualTesterView';
-import { SettingsView } from './views/SettingsView';
-import { DocGenView } from './views/DocGenView';
+import { ViewLoadingFallback } from './components/ViewLoadingFallback';
 import { AiCopilotModal } from './components/AiCopilotModal';
+import { ExportReportModal } from './components/ExportReportModal';
 import { ToastContainer } from './components/ToastContainer';
+import { UpdatePromptModal } from './components/UpdatePromptModal';
 import { toast } from './core/toast/toastManager';
 import { DevOpsEngine } from './core/devops/devopsEngine';
 import { AuditEngine } from './core/audit/auditEngine';
 import { getProviderDisplayName, getModelDisplayName, getProviderForModel, getDefaultModelForProvider } from './core/ai/aiProviders';
-import { DevOpsSubTab } from './views/DevOpsView';
+import type { DevOpsSubTab } from './views/DevOpsView';
+
+// On-demand code-split views for ultra-fast startup performance
+const DashboardView = lazy(() => import('./views/DashboardView').then(m => ({ default: m.DashboardView })));
+const DevOpsView = lazy(() => import('./views/DevOpsView').then(m => ({ default: m.DevOpsView })));
+const SecurityView = lazy(() => import('./views/SecurityView').then(m => ({ default: m.SecurityView })));
+const WuProfilerView = lazy(() => import('./views/WuProfilerView').then(m => ({ default: m.WuProfilerView })));
+const AuditView = lazy(() => import('./views/AuditView').then(m => ({ default: m.AuditView })));
+const ApiStudioView = lazy(() => import('./views/ApiStudioView').then(m => ({ default: m.ApiStudioView })));
+const TranslatorView = lazy(() => import('./views/TranslatorView').then(m => ({ default: m.TranslatorView })));
+const VisualTesterView = lazy(() => import('./views/VisualTesterView').then(m => ({ default: m.VisualTesterView })));
+const SettingsView = lazy(() => import('./views/SettingsView').then(m => ({ default: m.SettingsView })));
+const DocGenView = lazy(() => import('./views/DocGenView').then(m => ({ default: m.DocGenView })));
 import { APP_VERSION } from './version';
+import { ActivityStore } from './core/activity/activityStore';
+import { AutoBackupScheduler } from './core/devops/autoBackupScheduler';
+import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
+import { OnboardingTour } from './components/OnboardingTour';
 
 export const App: React.FC = () => {
   const store = ProjectStore.getInstance();
@@ -36,12 +45,25 @@ export const App: React.FC = () => {
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
+  const [copilotInitialPrompt, setCopilotInitialPrompt] = useState<string | undefined>(undefined);
+  const [copilotInitialMode, setCopilotInitialMode] = useState<'query' | 'regex' | 'privacy' | undefined>(undefined);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<ProjectProfile | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isAuditing, setIsAuditing] = useState(false);
   const [healthScore, setHealthScore] = useState<number | null>(null);
   const [healthGrade, setHealthGrade] = useState<string | null>(null);
+  const [hasUpdateAvailable, setHasUpdateAvailable] = useState(false);
+
+  // Persistent Update Prompt State
+  const [pendingUpdate, setPendingUpdate] = useState<{
+    version: string;
+    releaseNotes?: string;
+  } | null>(null);
+  const [isUpdateDismissed, setIsUpdateDismissed] = useState(false);
 
   // Apply theme to document
   useEffect(() => {
@@ -71,10 +93,43 @@ export const App: React.FC = () => {
         e.preventDefault();
         setIsTerminalOpen(prev => !prev);
       }
+      // Ctrl+/ or ? -> Toggle Shortcuts Modal
+      else if ((e.ctrlKey || e.metaKey) && (e.key === '/' || e.key === '?')) {
+        e.preventDefault();
+        setIsShortcutsOpen(prev => !prev);
+      }
+      // Ctrl+1 through Ctrl+9 -> Tab navigation
+      else if ((e.ctrlKey || e.metaKey) && e.key >= '1' && e.key <= '9') {
+        e.preventDefault();
+        const tabMap: Record<string, NavigationTab> = {
+          '1': 'dashboard',
+          '2': 'devops',
+          '3': 'audit',
+          '4': 'translator',
+          '5': 'visual-tester',
+          '6': 'security',
+          '7': 'wu-profiler',
+          '8': 'api-studio',
+          '9': 'doc-gen'
+        };
+        const target = tabMap[e.key];
+        if (target) {
+          setCurrentTab(target);
+        }
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [settings, isBackingUp]);
+
+  // Background Auto-Backup Scheduler
+  useEffect(() => {
+    const stopScheduler = AutoBackupScheduler.start(
+      () => settings.projects.find(p => p.id === settings.activeProjectId) || settings.projects[0],
+      () => settings
+    );
+    return stopScheduler;
+  }, [settings]);
 
   // Subscribe to store updates and hydrate blueprints from IndexedDB
   useEffect(() => {
@@ -93,7 +148,7 @@ export const App: React.FC = () => {
     return unsubscribe;
   }, []);
 
-  // Listen to Electron native menu IPC events (New Project, Toast notifications)
+  // Listen to Electron native menu IPC events (New Project, Toast notifications, Updater)
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).electronAPI) {
       const unsubNew = (window as any).electronAPI.receiveFromMain('menu:new-project', () => {
@@ -110,17 +165,58 @@ export const App: React.FC = () => {
           toast.info(payload?.title || 'Notice', payload?.message || '');
         }
       });
+      const unsubUpdater = (window as any).electronAPI.receiveFromMain('updater:status', (payload: any) => {
+        if (payload?.status === 'available' || payload?.status === 'downloaded') {
+          setHasUpdateAvailable(true);
+        }
+        if (payload?.status === 'downloaded') {
+          setPendingUpdate({
+            version: payload.version || '',
+            releaseNotes: payload.releaseNotes || ''
+          });
+          setIsUpdateDismissed(false);
+        }
+      });
       return () => {
         unsubNew && unsubNew();
         unsubToast && unsubToast();
+        unsubUpdater && unsubUpdater();
       };
     }
   }, []);
 
+  // Automatically check for updates on startup
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).electronAPI?.checkForUpdates) {
+      (window as any).electronAPI.checkForUpdates().catch((err: any) => {
+        console.log('[App] Startup auto-check for updates completed:', err?.message || err);
+      });
+    }
+  }, []);
+
+  const handleRestartNow = () => {
+    if (typeof window !== 'undefined' && (window as any).electronAPI?.installUpdate) {
+      (window as any).electronAPI.installUpdate();
+    } else if (typeof window !== 'undefined' && (window as any).electronAPI?.sendToMain) {
+      (window as any).electronAPI.sendToMain('updater:install');
+    }
+  };
+
+  const handleRestartLater = () => {
+    setIsUpdateDismissed(true);
+    toast.info(
+      'Update Deferred',
+      'The update is ready and will install automatically when you close the application.'
+    );
+  };
+
   // Initial welcome log & check if first run onboarding is needed
   useEffect(() => {
     addLog('system', `Bubble.io Dev Studio v${APP_VERSION} initialized.`, 'success');
-    if (settings.projects.length === 0) {
+    const hasCompletedOnboarding = localStorage.getItem('bubble_dev_studio_onboarding_completed') === 'true';
+    if (!hasCompletedOnboarding && settings.projects.length === 0) {
+      setIsOnboardingOpen(true);
+    } else if (settings.projects.length === 0) {
       addLog('system', 'No Bubble application connected yet. Opening connection setup...', 'warn');
       setIsConnectModalOpen(true);
     }
@@ -142,6 +238,17 @@ export const App: React.FC = () => {
   };
 
   const activeProject = settings.projects.find(p => p.id === settings.activeProjectId) || settings.projects[0];
+
+  const activeSchema = useMemo(() => {
+    if (activeProject?.blueprintExportJson) {
+      try {
+        return DevOpsEngine.parseBubbleSchemaJson(activeProject.blueprintExportJson, activeProject);
+      } catch (e) {
+        console.warn('Failed to parse active project schema:', e);
+      }
+    }
+    return null;
+  }, [activeProject?.blueprintExportJson, activeProject?.id]);
 
   const errorCount = logs.filter(l => l.level === 'error').length;
   const warnCount = logs.filter(l => l.level === 'warn').length;
@@ -195,6 +302,12 @@ export const App: React.FC = () => {
 
     setSettings(updated);
     addLog('system', `Successfully connected Bubble application: ${newProject.name} (${newProject.appId})`, 'success');
+    ActivityStore.record({
+      type: 'project',
+      title: 'Workspace Connected',
+      message: `Connected Bubble application: ${newProject.name} (${newProject.appId} - ${newProject.environment})`,
+      projectId: newProject.id
+    });
   };
 
   const handleConfirmDeleteProject = (id: string) => {
@@ -203,6 +316,12 @@ export const App: React.FC = () => {
     const updated = store.getSettings();
     setSettings(updated);
     addLog('system', `Removed Bubble application profile: ${proj?.name || id}`, 'warn');
+    ActivityStore.record({
+      type: 'project',
+      title: 'Workspace Removed',
+      message: `Removed Bubble application profile: ${proj?.name || id}`,
+      projectId: id
+    });
   };
 
   const handleSaveSettings = (newSettings: GlobalSettings) => {
@@ -224,6 +343,12 @@ export const App: React.FC = () => {
         toast.update(toastId, { message: msg });
       });
       addLog('devops', `[Quick Backup] Backup completed successfully (${result.backupId} • ${result.recordCount.toLocaleString()} records). View and manage in DevOps > Backup & Restore.`, 'success');
+      ActivityStore.record({
+        type: 'backup',
+        title: 'Quick Backup Completed',
+        message: `${result.backupId} • ${result.recordCount.toLocaleString()} records exported (${result.fileSizeKb} KB)`,
+        projectId: activeProject.id
+      });
       toast.update(toastId, {
         type: 'success',
         title: 'Quick Backup Completed!',
@@ -265,6 +390,12 @@ export const App: React.FC = () => {
       setHealthScore(report.score);
       setHealthGrade(report.grade);
       addLog('audit', `[Quick Audit] Completed: Health Score ${report.score}% (Grade ${report.grade}).`, 'success');
+      ActivityStore.record({
+        type: 'audit',
+        title: 'AST Audit Completed',
+        message: `Health Score ${report.score}% (Grade ${report.grade}) • ${report.deadElementsCount} dead elements, ${report.deadWorkflowsCount} dead workflows`,
+        projectId: activeProject?.id
+      });
       toast.update(toastId, {
         type: 'success',
         title: `AST Audit Complete (Score ${report.score}% • Grade ${report.grade})`,
@@ -289,6 +420,21 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleOpenCopilotWithPrompt = (prompt?: string, mode?: 'query' | 'regex' | 'privacy') => {
+    setCopilotInitialPrompt(prompt);
+    setCopilotInitialMode(mode);
+    setIsCopilotOpen(true);
+  };
+
+  const handleOpenBlueprintDiff = () => {
+    setDevOpsSubTab('blueprint_diff');
+    setCurrentTab('devops');
+  };
+
+  const handleOpenExportReport = () => {
+    setIsExportModalOpen(true);
+  };
+
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   return (
@@ -305,6 +451,7 @@ export const App: React.FC = () => {
           onDeleteProject={(proj) => setProjectToDelete(proj)}
           isOpen={isMobileSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
+          hasUpdate={hasUpdateAvailable}
         />
 
         {/* Main Content Area */}
@@ -319,11 +466,13 @@ export const App: React.FC = () => {
             logCount={logs.length}
             onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
             onOpenCopilot={() => setIsCopilotOpen(true)}
+            onNavigate={setCurrentTab}
           />
 
           {/* View Switcher */}
           <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', minWidth: 0, width: '100%', maxWidth: '100%' }}>
-            {currentTab === 'dashboard' && (
+            <Suspense fallback={<ViewLoadingFallback />}>
+              {currentTab === 'dashboard' && (
               <DashboardView
                 activeProject={activeProject}
                 onNavigate={setCurrentTab}
@@ -335,6 +484,9 @@ export const App: React.FC = () => {
                 healthScore={healthScore}
                 healthGrade={healthGrade}
                 onOpenCopilot={() => setIsCopilotOpen(true)}
+                onOpenCopilotWithPrompt={handleOpenCopilotWithPrompt}
+                onOpenBlueprintDiff={handleOpenBlueprintDiff}
+                onOpenExportReport={handleOpenExportReport}
               />
             )}
 
@@ -385,6 +537,7 @@ export const App: React.FC = () => {
                 anthropicApiKey={settings.anthropicApiKey}
                 openrouterApiKey={settings.openrouterApiKey}
                 groqApiKey={settings.groqApiKey}
+                deepseekApiKey={settings.deepseekApiKey}
                 xaiApiKey={settings.xaiApiKey}
                 opencodeApiKey={settings.opencodeApiKey}
                 ollamaUrl={settings.ollamaUrl}
@@ -401,6 +554,7 @@ export const App: React.FC = () => {
             {currentTab === 'doc-gen' && (
               <DocGenView
                 activeProject={activeProject}
+                settings={settings}
                 onLog={addLog}
               />
             )}
@@ -413,6 +567,7 @@ export const App: React.FC = () => {
                 onLog={addLog}
               />
             )}
+            </Suspense>
           </div>
 
           {/* Real-time Log Console Drawer */}
@@ -453,6 +608,8 @@ export const App: React.FC = () => {
             onTriggerAudit={handleQuickAudit}
             onToggleTerminal={() => setIsTerminalOpen(!isTerminalOpen)}
             onOpenCopilot={() => setIsCopilotOpen(true)}
+            onOpenShortcuts={() => setIsShortcutsOpen(true)}
+            onOpenOnboarding={() => setIsOnboardingOpen(true)}
           />
 
           {/* Bubble AI Copilot Modal (Ctrl+I) */}
@@ -474,7 +631,6 @@ export const App: React.FC = () => {
       {/* Bottom IDE Status Bar */}
       {(() => {
         const hasKey = (providerId: string) => {
-          if (providerId === 'mock') return true;
           if (activeProject?.aiProvider === providerId && activeProject?.aiApiKey && activeProject.aiApiKey.trim().length > 0) return true;
           switch (providerId) {
             case 'gemini': return Boolean(settings.geminiApiKey && settings.geminiApiKey.trim().length > 0);
@@ -527,6 +683,64 @@ export const App: React.FC = () => {
 
       {/* Global Interactive Toast Notification Container */}
       <ToastContainer />
+
+      {/* Persistent In-App Update Prompt Modal */}
+      {pendingUpdate && !isUpdateDismissed && (
+        <UpdatePromptModal
+          version={pendingUpdate.version}
+          releaseNotes={pendingUpdate.releaseNotes}
+          onRestartNow={handleRestartNow}
+          onRestartLater={handleRestartLater}
+        />
+      )}
+
+      {/* Global Keyboard Shortcuts Help Modal */}
+      <KeyboardShortcutsModal
+        isOpen={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
+        onNavigate={setCurrentTab}
+      />
+
+      {/* Interactive Onboarding Tour */}
+      <OnboardingTour
+        isOpen={isOnboardingOpen}
+        onClose={() => setIsOnboardingOpen(false)}
+        onNavigate={setCurrentTab}
+      />
+
+      {/* Universal White-Label Client Report Exporter Modal */}
+      <ExportReportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        activeProject={activeProject}
+        activeSchema={activeSchema}
+        healthScore={healthScore ?? undefined}
+        healthGrade={healthGrade ?? undefined}
+      />
+
+      {/* Bubble AI Copilot & Expression Studio Modal (Ctrl+I) */}
+      <AiCopilotModal
+        isOpen={isCopilotOpen}
+        onClose={() => {
+          setIsCopilotOpen(false);
+          setCopilotInitialPrompt(undefined);
+          setCopilotInitialMode(undefined);
+        }}
+        initialPrompt={copilotInitialPrompt}
+        initialMode={copilotInitialMode}
+        activeSchema={activeSchema}
+        availableDataTypes={activeSchema?.dataTypes.map((d: any) => d.name)}
+        onApplyQueryToRepl={(dataType) => {
+          setCurrentTab('devops');
+          setDevOpsSubTab('query');
+          setIsCopilotOpen(false);
+          toast.info(`Switched to Data API REPL for ${dataType}`);
+        }}
+        geminiApiKey={settings.geminiApiKey}
+        openaiApiKey={settings.openaiApiKey}
+        groqApiKey={settings.groqApiKey}
+        xaiApiKey={settings.xaiApiKey}
+      />
     </div>
   );
 };

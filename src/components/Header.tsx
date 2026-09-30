@@ -7,9 +7,11 @@ import {
   ShieldCheck, 
   Sparkles,
   Menu,
-  BookOpen
+  BookOpen,
+  ChevronRight
 } from 'lucide-react';
 import { NavigationTab, ProjectProfile, ThemeMode } from '../types';
+import { NotificationCenter } from './NotificationCenter';
 
 interface HeaderProps {
   currentTab: NavigationTab;
@@ -21,6 +23,7 @@ interface HeaderProps {
   logCount: number;
   onToggleMobileSidebar?: () => void;
   onOpenCopilot?: () => void;
+  onNavigate?: (tab: NavigationTab) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -32,7 +35,8 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleTerminal,
   logCount,
   onToggleMobileSidebar,
-  onOpenCopilot
+  onOpenCopilot,
+  onNavigate
 }) => {
   const getTabDetails = (tab: NavigationTab) => {
     switch (tab) {
@@ -91,6 +95,21 @@ export const Header: React.FC<HeaderProps> = ({
         )}
 
         <div style={{ minWidth: 0 }}>
+          {/* Breadcrumbs Trail */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '3px' }}>
+            <span 
+              onClick={() => onNavigate?.('dashboard')} 
+              style={{ cursor: onNavigate ? 'pointer' : 'default', transition: 'color 0.15s' }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent-primary)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+              title="Return to Workspace Overview"
+            >
+              {activeProject ? activeProject.name : 'Bubble Studio'}
+            </span>
+            <ChevronRight size={11} style={{ opacity: 0.6 }} />
+            <span style={{ color: 'var(--accent-cyan)', fontWeight: 600 }}>{details.title}</span>
+          </div>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <h2 style={{
               fontSize: '1.1rem',
@@ -170,6 +189,9 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </button>
         )}
+
+        {/* Notification Center */}
+        <NotificationCenter onNavigate={onNavigate} />
 
         {/* Theme Toggle */}
         <button 

@@ -1,8 +1,8 @@
 {
   "name": "bubble-io-dev-studio",
   "private": true,
-  "version": "3.0.3",
-  "description": "All-in-one Developer Studio & GUI for Bubble.io (DevOps, Schema, Dead Code Audit, AI Translation, Visual QA)",
+  "version": "3.8.0",
+  "description": "Bubble.io Developer Studio - Modern local companion suite for Bubble developers (DevOps, Schema, Dead Code Audit, AI Translation, Visual QA)",
   "main": "dist-electron/main.js",
   "author": {
     "name": "Alexandr Motologa | MTLG Labs",
@@ -26,7 +26,7 @@
   "scripts": {
     "dev": "concurrently -k \"npm run dev:vite\" \"npm run dev:electron\"",
     "dev:vite": "vite",
-    "dev:electron": "wait-on tcp:5173 && tsc -p tsconfig.node.json && electron .",
+    "dev:electron": "wait-on tcp:127.0.0.1:5180 && tsc -p tsconfig.node.json && electron .",
     "build": "tsc && vite build && tsc -p tsconfig.node.json",
     "build:vite": "vite build",
     "build:electron": "tsc -p tsconfig.node.json",
@@ -35,11 +35,14 @@
     "dist:mac": "npm run build && electron-builder --mac",
     "dist:linux": "npm run build && electron-builder --linux",
     "dist:all": "npm run build && electron-builder -mwl",
-    "typecheck": "tsc --noEmit && tsc -p tsconfig.node.json --noEmit"
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.node.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "axios": "^1.7.9",
     "clsx": "^2.1.1",
+    "electron-updater": "^6.8.9",
     "lucide-react": "^0.475.0",
     "mermaid": "^11.17.2",
     "papaparse": "^5.5.2",
@@ -62,12 +65,20 @@
     "electron-builder": "^25.1.8",
     "typescript": "^5.7.3",
     "vite": "^6.1.0",
+    "vitest": "^5.0.0",
     "wait-on": "^8.0.2"
   },
   "build": {
     "appId": "com.bubbleio.devstudio",
     "productName": "Bubble.io Dev Studio",
     "icon": "build/icon.png",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "alexandrmotologa",
+        "repo": "bubble-io-dev-studio"
+      }
+    ],
     "directories": {
       "output": "release"
     },
@@ -75,11 +86,19 @@
       "dist/**/*",
       "dist-electron/**/*",
       "build/**/*",
+      "extensions/**/*",
       "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "extensions",
+        "to": "extensions"
+      }
     ],
     "mac": {
       "icon": "build/icon.png",
       "category": "public.app-category.developer-tools",
+      "artifactName": "Bubble.io-Dev-Studio-${version}-${arch}.${ext}",
       "target": [
         {
           "target": "dmg",
@@ -99,6 +118,7 @@
     },
     "win": {
       "icon": "build/icon.ico",
+      "artifactName": "Bubble.io-Dev-Studio-${version}.${ext}",
       "target": [
         {
           "target": "nsis",
@@ -117,6 +137,7 @@
     "linux": {
       "icon": "build/icon.png",
       "maintainer": "Alexandr Motologa <alexandr@mtlglabs.space>",
+      "artifactName": "Bubble.io-Dev-Studio-${version}.${ext}",
       "target": [
         "AppImage",
         "deb"
@@ -125,9 +146,11 @@
     },
     "nsis": {
       "oneClick": false,
+      "runAfterFinish": true,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "artifactName": "Bubble.io-Dev-Studio-Setup-${version}.${ext}"
     }
   }
 }

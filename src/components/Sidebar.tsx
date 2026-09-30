@@ -26,6 +26,7 @@ interface SidebarProps {
   onDeleteProject?: (project: ProjectProfile) => void;
   isOpen?: boolean;
   onCloseMobile?: () => void;
+  hasUpdate?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -37,7 +38,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenConnectModal,
   onDeleteProject,
   isOpen,
-  onCloseMobile
+  onCloseMobile,
+  hasUpdate
 }) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: null },
@@ -49,7 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'doc-gen', label: 'DocGen Book', icon: BookOpen, badge: 'Docs' },
     { id: 'translator', label: 'AI Localization', icon: Languages, badge: 'AI' },
     { id: 'visual-tester', label: 'Visual QA Suite', icon: Camera, badge: 'Visual' },
-    { id: 'settings', label: 'Settings & Keys', icon: Settings, badge: null }
+    { id: 'settings', label: 'Settings & Keys', icon: Settings, badge: hasUpdate ? 'UPDATE' : null }
   ];
 
   const handleNavClick = (tabId: NavigationTab) => {
@@ -247,7 +249,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span>{item.label}</span>
                 </div>
                 {item.badge && (
-                  <span className={`badge ${isActive ? 'badge-indigo' : 'badge-cyan'}`} style={{ fontSize: '0.625rem', padding: '1px 6px' }}>
+                  <span className={`badge ${item.badge === 'UPDATE' ? 'badge-emerald animate-pulse' : isActive ? 'badge-indigo' : 'badge-cyan'}`} style={{ fontSize: '0.625rem', padding: '1px 6px' }}>
                     {item.badge}
                   </span>
                 )}

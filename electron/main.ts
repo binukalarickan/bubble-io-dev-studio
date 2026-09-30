@@ -1,5 +1,8 @@
-import { app, BrowserWindow, ipcMain, shell, Menu, MenuItemConstructorOptions, dialog, clipboard, safeStorage } from 'electron';
+import { app, BrowserWindow, ipcMain, shell, Menu, MenuItemConstructorOptions, dialog, clipboard, safeStorage, session } from 'electron';
 import path from 'path';
+import fs from 'fs';
+import http from 'http';
+import { autoUpdater } from 'electron-updater';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -86,37 +89,6 @@ function createAppMenu() {
             await shell.openExternal('https://github.com/alexandrmotologa');
           }
         },
-        {
-          label: 'Buy Me a Coffee (Support Project)',
-          click: async () => {
-            await shell.openExternal('https://buymeacoffee.com/mtlg');
-          }
-        },
-        {
-          label: 'Contact Support via Email (contact@mtlglabs.space)',
-          click: async () => {
-            const authorEmail = 'contact@mtlglabs.space';
-            clipboard.writeText(authorEmail);
-            if (mainWindow) {
-              mainWindow.webContents.send('toast:show', {
-                type: 'success',
-                title: 'Email Copied to Clipboard',
-                message: `Contact email (${authorEmail}) has been copied to your clipboard.`
-              });
-              dialog.showMessageBox(mainWindow, {
-                type: 'info',
-                title: 'Email Copied',
-                message: 'Contact Email Copied to Clipboard!',
-                detail: `The address "${authorEmail}" was copied to your clipboard.\n\nWould you also like to open your default email client?`,
-                buttons: ['OK (Just Copied)', 'Open Email Client']
-              }).then(res => {
-                if (res.response === 1) {
-                  shell.openExternal(`mailto:${authorEmail}?subject=Bubble.io%20Dev%20Studio%20Inquiry`);
-                }
-              });
-            }
-          }
-        },
         { type: 'separator' },
         {
           label: 'GitHub Repository',
@@ -130,6 +102,35 @@ function createAppMenu() {
             await shell.openExternal('https://github.com/alexandrmotologa/bubble-io-dev-studio#readme');
           }
         },
+        {
+          label: 'Check for Updates...',
+          click: async () => {
+            if (mainWindow) {
+              if (isDev) {
+                dialog.showMessageBox(mainWindow, {
+                  type: 'info',
+                  title: 'Development Mode',
+                  message: 'Update Check Skipped in Dev Mode',
+                  detail: `Current App Version: v${app.getVersion()}\nRunning in development environment with local Vite server. In production release builds, this automatically checks GitHub releases for new packages.`,
+                  buttons: ['OK']
+                });
+                return;
+              }
+              try {
+                mainWindow.webContents.send('updater:status', { status: 'checking' });
+                await autoUpdater.checkForUpdates();
+              } catch (e: any) {
+                dialog.showMessageBox(mainWindow, {
+                  type: 'error',
+                  title: 'Update Check Failed',
+                  message: 'Could not check for updates',
+                  detail: e.message || 'Please verify your network connection or GitHub repository availability.',
+                  buttons: ['OK']
+                });
+              }
+            }
+          }
+        },
         { type: 'separator' },
         {
           label: 'About Bubble.io Dev Studio',
@@ -138,8 +139,8 @@ function createAppMenu() {
               dialog.showMessageBox(mainWindow, {
                 type: 'info',
                 title: 'About Bubble.io Dev Studio',
-                message: 'Bubble.io Dev Studio v3.0.0 (Production Stable)',
-                detail: 'All-in-one Developer Studio & GUI for Bubble.io (DevOps, Schema, Dead Code Audit, AI Translation, Visual QA)\n\nAuthor: Alexandr Motologa | MTLG Labs\nStudio: https://mtlglabs.space\nPersonal Hub: https://mtlg.site\nGitHub: https://github.com/alexandrmotologa\nSupport: https://buymeacoffee.com/mtlg\nEmail: contact@mtlglabs.space',
+                message: `Bubble.io Dev Studio v${app.getVersion()} (Production Stable)`,
+                detail: `All-in-one Developer Studio & GUI for Bubble.io (DevOps, Schema, Dead Code Audit, AI Translation, Visual QA)\n\nAuthor: Alexandr Motologa | MTLG Labs`,
                 buttons: ['OK']
               });
             }
@@ -177,15 +178,40 @@ function createWindow() {
   createAppMenu();
 
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
+    const devPort = process.env.PORT || '5180';
+    mainWindow.loadURL(`http://127.0.0.1:${devPort}`);
+    mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+      console.warn(`[Electron] Failed to load ${validatedURL}: [${errorCode}] ${errorDescription}, falling back to built dist...`);
+      const distIndex = path.join(__dirname, '../dist/index.html');
+      if (fs.existsSync(distIndex)) {
+        mainWindow?.loadFile(distIndex);
+      }
+    });
     // mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
+  mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    console.log(`[Renderer L${level}] ${message} (${sourceId}:${line})`);
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
+
+  // Initialize in-app auto-update notifications and listeners
+  initAutoUpdater();
+
+  // Automatically check for updates on startup
+  if (!isDev) {
+    setTimeout(() => {
+      console.log('[AutoUpdater] Automatically checking for updates on application startup...');
+      autoUpdater.checkForUpdates().catch((err: any) => {
+        console.warn('[AutoUpdater] Startup update check failed:', err?.message || err);
+      });
+    }, 2000);
+  }
 
   // Handle external links opening in user's default browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -198,6 +224,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
   createWindow();
+  initDownloadsWatcher(true);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -222,6 +249,27 @@ ipcMain.handle('shell:open-external', async (_event, url: string) => {
 ipcMain.handle('http:fetch', async (_event, url: string, headers?: Record<string, string>) => {
   try {
     const res = await fetch(url, { method: 'GET', headers: headers || {} });
+    const data = await res.json().catch(() => null);
+    return { ok: res.ok, status: res.status, data };
+  } catch (err: any) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('http:request', async (_event, options: { url: string; method?: string; headers?: Record<string, string>; body?: any }) => {
+  try {
+    const { url, method = 'GET', headers = {}, body } = options;
+    const fetchOptions: any = {
+      method: method.toUpperCase(),
+      headers: { ...headers }
+    };
+    if (body !== undefined && fetchOptions.method !== 'GET' && fetchOptions.method !== 'HEAD') {
+      fetchOptions.body = typeof body === 'string' ? body : JSON.stringify(body);
+      if (!fetchOptions.headers['Content-Type'] && !fetchOptions.headers['content-type']) {
+        fetchOptions.headers['Content-Type'] = 'application/json';
+      }
+    }
+    const res = await fetch(url, fetchOptions);
     const data = await res.json().catch(() => null);
     return { ok: res.ok, status: res.status, data };
   } catch (err: any) {
@@ -302,3 +350,516 @@ ipcMain.handle('visual:capture-page', async (_event, targetUrl: string, width: n
     }
   }
 });
+
+// Community Feature #1: Native In-App Auto-Updater
+function sendUpdaterStatus(statusData: any) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('updater:status', statusData);
+  }
+}
+
+function initAutoUpdater() {
+  autoUpdater.logger = console;
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('checking-for-update', () => {
+    sendUpdaterStatus({ status: 'checking' });
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    sendUpdaterStatus({
+      status: 'available',
+      version: info.version,
+      releaseDate: info.releaseDate,
+      releaseNotes: info.releaseNotes
+    });
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('toast:show', {
+        type: 'info',
+        title: 'New Update Available',
+        message: `Bubble.io Dev Studio v${info.version} is available. Downloading update in background...`
+      });
+    }
+  });
+
+  autoUpdater.on('update-not-available', (info) => {
+    sendUpdaterStatus({
+      status: 'not-available',
+      version: info?.version || app.getVersion()
+    });
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('toast:show', {
+        type: 'success',
+        title: 'Up to Date',
+        message: `Bubble.io Dev Studio v${app.getVersion()} is currently the latest version.`
+      });
+    }
+  });
+
+  autoUpdater.on('download-progress', (progressObj) => {
+    sendUpdaterStatus({
+      status: 'downloading',
+      percent: Math.round(progressObj.percent),
+      transferred: progressObj.transferred,
+      total: progressObj.total,
+      bytesPerSecond: progressObj.bytesPerSecond
+    });
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    sendUpdaterStatus({
+      status: 'downloaded',
+      version: info.version
+    });
+  });
+
+  autoUpdater.on('error', (err) => {
+    const errorMsg = err == null ? 'unknown' : (err.message || err.toString());
+    console.warn('autoUpdater error:', errorMsg);
+    sendUpdaterStatus({
+      status: 'error',
+      error: errorMsg
+    });
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('toast:show', {
+        type: 'error',
+        title: 'Update Check Issue',
+        message: errorMsg
+      });
+    }
+  });
+}
+
+ipcMain.handle('updater:check', async () => {
+  if (isDev) {
+    return {
+      status: 'dev-mode',
+      currentVersion: app.getVersion(),
+      message: 'Auto-update is disabled in development mode'
+    };
+  }
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return {
+      status: 'checked',
+      currentVersion: app.getVersion(),
+      updateInfo: result?.updateInfo
+    };
+  } catch (err: any) {
+    return {
+      status: 'error',
+      currentVersion: app.getVersion(),
+      error: err.message || 'Failed to check for updates'
+    };
+  }
+});
+
+ipcMain.handle('updater:download', async () => {
+  try {
+    await autoUpdater.downloadUpdate();
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('updater:install', async () => {
+  autoUpdater.quitAndInstall(false, true);
+});
+
+ipcMain.handle('updater:get-info', async () => {
+  return {
+    currentVersion: app.getVersion(),
+    isPackaged: app.isPackaged,
+    platform: process.platform
+  };
+});
+
+// ============================================================================
+// Community Feature #2: In-App .bubble Auto-Download & Direct Sync
+// ============================================================================
+
+let downloadsWatcher: fs.FSWatcher | null = null;
+let isDownloadsWatcherActive = false;
+
+function initDownloadsWatcher(enable: boolean): boolean {
+  if (downloadsWatcher) {
+    try {
+      downloadsWatcher.close();
+    } catch (e) {
+      // ignore
+    }
+    downloadsWatcher = null;
+  }
+  isDownloadsWatcherActive = enable;
+  if (!enable) return true;
+
+  try {
+    const downloadsPath = app.getPath('downloads');
+    if (!fs.existsSync(downloadsPath)) return false;
+
+    let debounceTimer: NodeJS.Timeout | null = null;
+
+    downloadsWatcher = fs.watch(downloadsPath, (_eventType, filename) => {
+      if (!filename) return;
+      const lower = filename.toLowerCase();
+      if (!lower.endsWith('.bubble') && !lower.endsWith('.json')) return;
+
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        try {
+          const fullPath = path.join(downloadsPath, filename);
+          if (!fs.existsSync(fullPath)) return;
+          const stat = fs.statSync(fullPath);
+          if (stat.size < 100) return;
+
+          const raw = fs.readFileSync(fullPath, 'utf-8');
+          const data = JSON.parse(raw);
+          if (data && (data.pages || data.workflows || data.types || data.user_types || data.schema || data.app_version)) {
+            let pagesCount = 0;
+            let workflowsCount = 0;
+            let elementsCount = 0;
+            let dataTypesCount = 0;
+            let appTextsCount = 0;
+
+            if (data.pages && typeof data.pages === 'object') {
+              pagesCount = Object.keys(data.pages).length;
+              for (const p of Object.values<any>(data.pages)) {
+                if (p.elements) elementsCount += Object.keys(p.elements).length;
+                if (p.events || p.workflows) workflowsCount += Object.keys(p.events || p.workflows || {}).length;
+              }
+            }
+            if (data.element_definitions) {
+              elementsCount += Object.keys(data.element_definitions).length;
+            }
+            if (data.workflows) workflowsCount += Object.keys(data.workflows).length;
+            if (data.user_types) dataTypesCount += Object.keys(data.user_types).length;
+            if (data.custom_types) dataTypesCount += Object.keys(data.custom_types).length;
+            if (data.types) dataTypesCount += Object.keys(data.types).length;
+            if (data.app_texts) appTextsCount = Object.keys(data.app_texts).length;
+
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('bubbleSync:fileDetected', {
+                fileName: filename,
+                filePath: fullPath,
+                content: data,
+                stats: {
+                  pagesCount: pagesCount || 1,
+                  workflowsCount: workflowsCount || 0,
+                  elementsCount: elementsCount || 0,
+                  dataTypesCount: dataTypesCount || 0,
+                  appTextsCount: appTextsCount || 0
+                }
+              });
+            }
+          }
+        } catch (e) {
+          // ignore incomplete writes or non-Bubble JSON
+        }
+      }, 800);
+    });
+
+    return true;
+  } catch (err) {
+    console.warn('Failed to initialize downloads watcher:', err);
+    return false;
+  }
+}
+
+ipcMain.handle('bubbleSync:setDownloadsWatcher', async (_event, enabled: boolean) => {
+  return initDownloadsWatcher(enabled);
+});
+
+ipcMain.handle('bubbleSync:checkAuth', async () => {
+  try {
+    const authSession = session.fromPartition('persist:bubble_session');
+    const cookies = await authSession.cookies.get({ domain: 'bubble.io' });
+    if (!cookies || cookies.length === 0) {
+      return { isAuthenticated: false };
+    }
+    // Verify session by probing bubble.io/home with manual redirect
+    const res = await authSession.fetch('https://bubble.io/home', {
+      method: 'GET',
+      redirect: 'manual',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+    const location = res.headers.get('location') || '';
+    if (res.status === 302 && location.includes('/login')) {
+      return { isAuthenticated: false };
+    }
+    if (res.status === 200 && !res.url.includes('/login')) {
+      return { isAuthenticated: true };
+    }
+    return { isAuthenticated: false };
+  } catch (err) {
+    return { isAuthenticated: false };
+  }
+});
+
+function copyDirRecursive(src: string, dest: string) {
+  if (!fs.existsSync(dest)) {
+    fs.mkdirSync(dest, { recursive: true });
+  }
+  const entries = fs.readdirSync(src, { withFileTypes: true });
+  for (const entry of entries) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      copyDirRecursive(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
+
+
+ipcMain.handle('bubbleSync:checkRecentDownloads', async (_event, appId?: string) => {
+  try {
+    const downloadsDir = app.getPath('downloads');
+    if (!fs.existsSync(downloadsDir)) return { found: false };
+
+    const files = fs.readdirSync(downloadsDir);
+    const cleanAppId = (appId || '').toLowerCase().trim();
+
+    const candidates: Array<{ name: string; fullPath: string; mtime: number; size: number }> = [];
+
+    for (const f of files) {
+      const lower = f.toLowerCase();
+      if (!lower.endsWith('.bubble') && !lower.endsWith('.json')) continue;
+      const fullPath = path.join(downloadsDir, f);
+      try {
+        const st = fs.statSync(fullPath);
+        // within last 14 days and size > 500 bytes
+        if (st.size > 500 && Date.now() - st.mtimeMs < 14 * 24 * 3600 * 1000) {
+          candidates.push({
+            name: f,
+            fullPath,
+            mtime: st.mtimeMs,
+            size: st.size
+          });
+        }
+      } catch {}
+    }
+
+    if (candidates.length === 0) return { found: false };
+
+    // Sort: 1) contains appId first, 2) non-api-generated first, 3) newest mtime
+    candidates.sort((a, b) => {
+      const aLower = a.name.toLowerCase();
+      const bLower = b.name.toLowerCase();
+
+      const aMatch = cleanAppId && aLower.includes(cleanAppId);
+      const bMatch = cleanAppId && bLower.includes(cleanAppId);
+      if (aMatch && !bMatch) return -1;
+      if (!aMatch && bMatch) return 1;
+
+      const aIsApi = aLower.includes('_api_generated');
+      const bIsApi = bLower.includes('_api_generated');
+      if (!aIsApi && bIsApi) return -1;
+      if (aIsApi && !bIsApi) return 1;
+
+      return b.mtime - a.mtime;
+    });
+
+    const top = candidates[0];
+    const raw = fs.readFileSync(top.fullPath, 'utf8');
+    const data = JSON.parse(raw);
+
+    let pagesCount = 0;
+    let workflowsCount = 0;
+    let elementsCount = 0;
+    let dataTypesCount = 0;
+    let appTextsCount = 0;
+
+    if (data.pages && typeof data.pages === 'object') {
+      pagesCount = Object.keys(data.pages).length;
+      for (const p of Object.values<any>(data.pages)) {
+        if (p.elements) elementsCount += Object.keys(p.elements).length;
+        if (p.events || p.workflows) workflowsCount += Object.keys(p.events || p.workflows || {}).length;
+      }
+    }
+    if (data.element_definitions) {
+      elementsCount += Object.keys(data.element_definitions).length;
+    }
+    if (data.workflows) workflowsCount += Object.keys(data.workflows).length;
+    if (data.user_types) dataTypesCount += Object.keys(data.user_types).length;
+    if (data.custom_types) dataTypesCount += Object.keys(data.custom_types).length;
+    if (data.types) dataTypesCount += Object.keys(data.types).length;
+    if (data.app_texts) appTextsCount = Object.keys(data.app_texts).length;
+
+    return {
+      found: true,
+      fileName: top.name,
+      filePath: top.fullPath,
+      sizeBytes: top.size,
+      mtime: top.mtime,
+      content: data,
+      stats: {
+        pagesCount: pagesCount || 1,
+        workflowsCount: workflowsCount || 0,
+        elementsCount: elementsCount || 0,
+        dataTypesCount: dataTypesCount || 0,
+        appTextsCount: appTextsCount || 0
+      }
+    };
+  } catch (err: any) {
+    return { found: false, error: err.message };
+  }
+});
+
+// Legacy backward-compatible stubs
+ipcMain.handle('bubbleSync:login', async () => {
+  return { isAuthenticated: false, error: 'Please use 1-Click Cloud Sync or Downloads auto-detect.' };
+});
+
+ipcMain.handle('bubbleSync:fetchApp', async (_event, appId: string) => {
+  return { success: false, error: 'Please use 1-Click Cloud Sync or Downloads auto-detect.' };
+});
+
+ipcMain.handle('bubbleSync:logout', async () => {
+  try {
+    const authSession = session.fromPartition('persist:bubble_session');
+    await authSession.clearStorageData();
+    return true;
+  } catch (err) {
+    return false;
+  }
+});
+
+ipcMain.handle('bubbleSync:showInFolder', async (_event, filePath: string) => {
+  if (filePath && fs.existsSync(filePath)) {
+    shell.showItemInFolder(filePath);
+    return true;
+  }
+  return false;
+});
+
+ipcMain.handle('bubbleSync:exportBlueprintToDisk', async (_event, { fileName, data }: { fileName: string; data: any }) => {
+  try {
+    const downloadsDir = app.getPath('downloads');
+    const safeName = fileName || `bubble_export_${Date.now()}.bubble`;
+    const targetPath = path.join(downloadsDir, safeName);
+    fs.writeFileSync(targetPath, JSON.stringify(data), 'utf8');
+    shell.showItemInFolder(targetPath);
+    return { success: true, filePath: targetPath };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+});
+
+// ============================================================================
+// LOCAL WEBHOOK MOCK SERVER (IPC & HTTP)
+// ============================================================================
+let webhookServer: http.Server | null = null;
+let webhookServerPort = 4040;
+
+ipcMain.handle('webhookServer:start', async (_event, port: number = 4040) => {
+  if (webhookServer) {
+    return { success: true, port: webhookServerPort, message: 'Server is already running.' };
+  }
+
+  return new Promise((resolve) => {
+    try {
+      webhookServerPort = port || 4040;
+      webhookServer = http.createServer((req, res) => {
+        // Handle CORS Preflight
+        if (req.method === 'OPTIONS') {
+          res.writeHead(200, {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+            'Access-Control-Allow-Headers': '*'
+          });
+          res.end();
+          return;
+        }
+
+        const parsedUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+        const chunks: Buffer[] = [];
+
+        req.on('data', (chunk) => {
+          chunks.push(chunk);
+        });
+
+        req.on('end', () => {
+          const rawBody = Buffer.concat(chunks).toString('utf8');
+          let parsedBody: any = null;
+          try {
+            parsedBody = rawBody ? JSON.parse(rawBody) : null;
+          } catch {
+            parsedBody = rawBody;
+          }
+
+          const queryParams: Record<string, string> = {};
+          parsedUrl.searchParams.forEach((val, key) => {
+            queryParams[key] = val;
+          });
+
+          const payload = {
+            id: `whk_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+            timestamp: new Date().toISOString(),
+            method: req.method || 'POST',
+            url: req.url || '/',
+            path: parsedUrl.pathname,
+            headers: req.headers,
+            queryParams,
+            rawBody,
+            body: parsedBody,
+            clientIp: req.socket.remoteAddress || '127.0.0.1'
+          };
+
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('webhook:received', payload);
+          }
+
+          res.writeHead(200, {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+            'Access-Control-Allow-Headers': '*'
+          });
+          res.end(JSON.stringify({ status: 'ok', received: true, id: payload.id, timestamp: payload.timestamp }));
+        });
+      });
+
+      webhookServer.on('error', (err: any) => {
+        webhookServer = null;
+        resolve({ success: false, error: err.message });
+      });
+
+      webhookServer.listen(webhookServerPort, () => {
+        resolve({ success: true, port: webhookServerPort });
+      });
+    } catch (e: any) {
+      webhookServer = null;
+      resolve({ success: false, error: e.message });
+    }
+  });
+});
+
+ipcMain.handle('webhookServer:stop', async () => {
+  if (!webhookServer) {
+    return { success: true, message: 'Server was not running.' };
+  }
+
+  return new Promise((resolve) => {
+    webhookServer!.close(() => {
+      webhookServer = null;
+      resolve({ success: true });
+    });
+  });
+});
+
+ipcMain.handle('webhookServer:status', async () => {
+  return {
+    isRunning: Boolean(webhookServer),
+    port: webhookServerPort
+  };
+});
+
+
+
+

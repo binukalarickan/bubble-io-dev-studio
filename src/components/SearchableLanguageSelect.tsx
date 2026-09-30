@@ -48,7 +48,12 @@ export const SearchableLanguageSelect: React.FC<SearchableLanguageSelectProps> =
           onChange(selectedLanguages.filter(c => c !== code));
         }
       } else {
-        onChange([...selectedLanguages, code]);
+        // If the only selected language was default en_us, replace with user's chosen target language
+        if (selectedLanguages.length === 1 && selectedLanguages[0] === 'en_us' && code !== 'en_us') {
+          onChange([code]);
+        } else {
+          onChange([...selectedLanguages, code]);
+        }
       }
     } else {
       onChange([code]);
@@ -68,24 +73,24 @@ export const SearchableLanguageSelect: React.FC<SearchableLanguageSelectProps> =
       const euroCodes = ['ro_ro', 'fr_fr', 'es_es', 'de_de', 'it_it', 'pt_pt', 'nl_nl', 'pl_pl', 'uk_ua', 'sv_se', 'da_dk', 'fi_fi', 'el_gr', 'cs_cz', 'hu_hu'];
       onChange(euroCodes);
     } else if (preset === 'top6') {
-      onChange(['en_us', 'es_es', 'fr_fr', 'de_de', 'zh_cn', 'ja_jp']);
+      onChange(['es_es', 'fr_fr', 'de_de', 'zh_cn', 'ja_jp', 'ro_ro']);
     } else if (preset === 'all') {
       onChange(BUBBLE_LANGUAGES.map(l => l.code));
     } else if (preset === 'clear') {
-      onChange(['en_us']);
+      onChange(['es_es']);
     }
   };
 
   const selectedObjects = BUBBLE_LANGUAGES.filter(l => selectedLanguages.includes(l.code));
 
   return (
-    <div ref={dropdownRef} style={{ position: 'relative', width: '100%' }}>
+    <div ref={dropdownRef} style={{ position: 'relative', width: '100%', zIndex: isOpen ? 1000 : 'auto' }}>
       {/* Trigger / Summary Bar */}
       <div
         onClick={() => setIsOpen(!isOpen)}
         style={{
-          minHeight: '40px',
-          padding: '6px 12px',
+          minHeight: '42px',
+          padding: '4px 12px',
           background: 'var(--bg-input)',
           border: isOpen ? '1px solid var(--border-active)' : '1px solid var(--border-subtle)',
           borderRadius: 'var(--radius-md)',
@@ -94,7 +99,8 @@ export const SearchableLanguageSelect: React.FC<SearchableLanguageSelectProps> =
           justifyContent: 'space-between',
           alignItems: 'center',
           gap: '8px',
-          transition: 'all 0.15s ease'
+          transition: 'all 0.15s ease',
+          boxSizing: 'border-box'
         }}
       >
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center', flex: 1 }}>
@@ -145,11 +151,13 @@ export const SearchableLanguageSelect: React.FC<SearchableLanguageSelectProps> =
             top: 'calc(100% + 6px)',
             left: 0,
             right: 0,
-            zIndex: 100,
-            background: 'var(--bg-card)',
+            zIndex: 1000,
+            background: 'var(--bg-surface-elevated, #1a2336)',
             border: '1px solid var(--border-active)',
             borderRadius: 'var(--radius-md)',
-            boxShadow: '0 12px 32px rgba(0,0,0,0.5)',
+            boxShadow: '0 24px 48px -4px rgba(0,0,0,0.75), 0 0 0 1px var(--border-active)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
             padding: '12px',
             display: 'flex',
             flexDirection: 'column',
@@ -226,7 +234,7 @@ export const SearchableLanguageSelect: React.FC<SearchableLanguageSelectProps> =
           {/* Scrollable Language List */}
           <div
             style={{
-              maxHeight: '260px',
+              maxHeight: 'min(240px, 35vh)',
               overflowY: 'auto',
               display: 'flex',
               flexDirection: 'column',
@@ -274,13 +282,36 @@ export const SearchableLanguageSelect: React.FC<SearchableLanguageSelectProps> =
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       {lang.region && (
                         <span style={{ fontSize: '0.675rem', color: 'var(--text-muted)' }}>{lang.region}</span>
                       )}
                       <code style={{ fontSize: '0.7rem', padding: '2px 4px', background: 'rgba(0,0,0,0.3)', borderRadius: '3px' }}>
                         {lang.code}
                       </code>
+                      {isMultiSelect && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onChange([lang.code]);
+                            setIsOpen(false);
+                          }}
+                          className="btn btn-secondary btn-sm"
+                          style={{
+                            fontSize: '0.65rem',
+                            padding: '2px 6px',
+                            height: '20px',
+                            lineHeight: 1,
+                            borderRadius: '4px',
+                            border: '1px solid var(--border-subtle)',
+                            whiteSpace: 'nowrap'
+                          }}
+                          title={`Select ONLY ${lang.name} and close dropdown`}
+                        >
+                          Only
+                        </button>
+                      )}
                     </div>
                   </div>
                 );

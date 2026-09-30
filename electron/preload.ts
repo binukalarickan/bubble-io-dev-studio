@@ -11,11 +11,60 @@ export interface ElectronAPI {
   receiveFromMain: (channel: string, func: (...args: any[]) => void) => () => void;
   openExternal: (url: string) => Promise<void>;
   fetchHttp: (url: string, headers?: Record<string, string>) => Promise<{ ok: boolean; status?: number; data?: any; error?: string }>;
+  httpRequest?: (options: { url: string; method?: string; headers?: Record<string, string>; body?: any }) => Promise<{ ok: boolean; status?: number; data?: any; error?: string }>;
   secureEncrypt: (plainText: string) => Promise<string>;
   secureDecrypt: (cipherText: string) => Promise<string>;
   isEncryptionAvailable: () => Promise<boolean>;
   capturePage: (url: string, width: number, height: number, headers?: Record<string, string>) => Promise<{ success: boolean; dataUrl?: string; error?: string; width?: number; height?: number }>;
+  checkForUpdates: () => Promise<any>;
+  downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
+  installUpdate: () => Promise<void>;
+  getAppInfo: () => Promise<{ currentVersion: string; isPackaged: boolean; platform: string }>;
+  bubbleSyncLogin: () => Promise<{ isAuthenticated: boolean; userEmail?: string }>;
+  bubbleSyncLogout: () => Promise<boolean>;
+  bubbleSyncCheckAuth: () => Promise<{ isAuthenticated: boolean; userEmail?: string }>;
+  bubbleSyncFetchApp: (appId: string) => Promise<{ success: boolean; fileName?: string; filePath?: string; data?: any; error?: string }>;
+  bubbleSyncSetDownloadsWatcher: (enabled: boolean) => Promise<boolean>;
+  bubbleSyncShowInFolder: (filePath: string) => Promise<boolean>;
+  bubbleSyncExportBlueprintToDisk: (fileName: string, data: any) => Promise<{ success: boolean; filePath?: string; error?: string }>;
+  bubbleSyncCheckRecentDownloads: (appId?: string) => Promise<{
+    found: boolean;
+    fileName?: string;
+    filePath?: string;
+    sizeBytes?: number;
+    mtime?: number;
+    content?: any;
+    stats?: {
+      pagesCount: number;
+      workflowsCount: number;
+      elementsCount: number;
+      dataTypesCount: number;
+      appTextsCount: number;
+    };
+    error?: string;
+  }>;
+  onBubbleFileDetected: (callback: (data: { fileName: string; content: any; stats?: any }) => void) => () => void;
+  startWebhookServer: (port?: number) => Promise<{ success: boolean; port?: number; error?: string }>;
+  stopWebhookServer: () => Promise<{ success: boolean; message?: string }>;
+  getWebhookServerStatus: () => Promise<{ isRunning: boolean; port?: number }>;
+  onWebhookReceived: (callback: (payload: any) => void) => () => void;
 }
+
+const ALLOWED_SEND_CHANNELS = new Set<string>([
+  'updater:check',
+  'updater:download',
+  'updater:install',
+  'bubbleSync:login',
+  'bubbleSync:logout'
+]);
+
+const ALLOWED_RECEIVE_CHANNELS = new Set<string>([
+  'menu:new-project',
+  'toast:show',
+  'updater:status',
+  'bubbleSync:fileDetected',
+  'webhook:received'
+]);
 
 const api: ElectronAPI = {
   platform: process.platform,
@@ -25,9 +74,17 @@ const api: ElectronAPI = {
     electron: process.versions.electron
   },
   sendToMain: (channel, data) => {
+    if (!ALLOWED_SEND_CHANNELS.has(channel)) {
+      console.warn(`[Electron IPC] Blocked unauthorized sendToMain channel: "${channel}"`);
+      return;
+    }
     ipcRenderer.send(channel, data);
   },
   receiveFromMain: (channel, func) => {
+    if (!ALLOWED_RECEIVE_CHANNELS.has(channel)) {
+      console.warn(`[Electron IPC] Blocked unauthorized receiveFromMain channel: "${channel}"`);
+      return () => {};
+    }
     const subscription = (_event: any, ...args: any[]) => func(...args);
     ipcRenderer.on(channel, subscription);
     return () => {
@@ -40,6 +97,9 @@ const api: ElectronAPI = {
   fetchHttp: async (url: string, headers?: Record<string, string>) => {
     return ipcRenderer.invoke('http:fetch', url, headers);
   },
+  httpRequest: async (options: { url: string; method?: string; headers?: Record<string, string>; body?: any }) => {
+    return ipcRenderer.invoke('http:request', options);
+  },
   secureEncrypt: async (plainText: string) => {
     return ipcRenderer.invoke('secure:encrypt', plainText);
   },
@@ -51,7 +111,67 @@ const api: ElectronAPI = {
   },
   capturePage: async (url: string, width: number, height: number, headers?: Record<string, string>) => {
     return ipcRenderer.invoke('visual:capture-page', url, width, height, headers);
+  },
+  checkForUpdates: async () => {
+    return ipcRenderer.invoke('updater:check');
+  },
+  downloadUpdate: async () => {
+    return ipcRenderer.invoke('updater:download');
+  },
+  installUpdate: async () => {
+    return ipcRenderer.invoke('updater:install');
+  },
+  getAppInfo: async () => {
+    return ipcRenderer.invoke('updater:get-info');
+  },
+  bubbleSyncLogin: async () => {
+    return ipcRenderer.invoke('bubbleSync:login');
+  },
+  bubbleSyncLogout: async () => {
+    return ipcRenderer.invoke('bubbleSync:logout');
+  },
+  bubbleSyncCheckAuth: async () => {
+    return ipcRenderer.invoke('bubbleSync:checkAuth');
+  },
+  bubbleSyncFetchApp: async (appId: string) => {
+    return ipcRenderer.invoke('bubbleSync:fetchApp', appId);
+  },
+  bubbleSyncSetDownloadsWatcher: async (enabled: boolean) => {
+    return ipcRenderer.invoke('bubbleSync:setDownloadsWatcher', enabled);
+  },
+  bubbleSyncShowInFolder: async (filePath: string) => {
+    return ipcRenderer.invoke('bubbleSync:showInFolder', filePath);
+  },
+  bubbleSyncExportBlueprintToDisk: async (fileName: string, data: any) => {
+    return ipcRenderer.invoke('bubbleSync:exportBlueprintToDisk', { fileName, data });
+  },
+  bubbleSyncCheckRecentDownloads: async (appId?: string) => {
+    return ipcRenderer.invoke('bubbleSync:checkRecentDownloads', appId);
+  },
+  onBubbleFileDetected: (callback: (data: { fileName: string; content: any; stats?: any }) => void) => {
+    const subscription = (_event: any, data: any) => callback(data);
+    ipcRenderer.on('bubbleSync:fileDetected', subscription);
+    return () => {
+      ipcRenderer.removeListener('bubbleSync:fileDetected', subscription);
+    };
+  },
+  startWebhookServer: async (port?: number) => {
+    return ipcRenderer.invoke('webhookServer:start', port);
+  },
+  stopWebhookServer: async () => {
+    return ipcRenderer.invoke('webhookServer:stop');
+  },
+  getWebhookServerStatus: async () => {
+    return ipcRenderer.invoke('webhookServer:status');
+  },
+  onWebhookReceived: (callback: (payload: any) => void) => {
+    const subscription = (_event: any, data: any) => callback(data);
+    ipcRenderer.on('webhook:received', subscription);
+    return () => {
+      ipcRenderer.removeListener('webhook:received', subscription);
+    };
   }
 };
 
 contextBridge.exposeInMainWorld('electronAPI', api);
+
