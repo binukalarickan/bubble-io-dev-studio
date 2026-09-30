@@ -57,6 +57,8 @@ interface TranslatorViewProps {
   xaiApiKey?: string;
   opencodeApiKey?: string;
   ollamaUrl?: string;
+  claudeCliPath?: string;
+  codexCliPath?: string;
 }
 
 type TranslatorSubTab = 'studio' | 'glossary' | 'cache' | 'pseudo' | 'cost';
@@ -73,7 +75,9 @@ export const TranslatorView: React.FC<TranslatorViewProps> = ({
   deepseekApiKey,
   xaiApiKey,
   opencodeApiKey,
-  ollamaUrl
+  ollamaUrl,
+  claudeCliPath,
+  codexCliPath
 }) => {
   const [subTab, setSubTab] = useState<TranslatorSubTab>('studio');
 
@@ -348,7 +352,8 @@ export const TranslatorView: React.FC<TranslatorViewProps> = ({
       glossary,
       apiKey: getEffectiveApiKey(provider),
       ollamaUrl: ollamaUrl || 'http://localhost:11434',
-      customPromptInstructions: customPromptInstructions.trim() || undefined
+      customPromptInstructions: customPromptInstructions.trim() || undefined,
+      cliPath: provider === 'claude-subscription' ? claudeCliPath : provider === 'chatgpt-subscription' ? codexCliPath : undefined
     };
 
     try {
@@ -392,7 +397,8 @@ export const TranslatorView: React.FC<TranslatorViewProps> = ({
       glossary,
       apiKey: getEffectiveApiKey(provider),
       ollamaUrl: ollamaUrl || 'http://localhost:11434',
-      customPromptInstructions: customPromptInstructions.trim() || undefined
+      customPromptInstructions: customPromptInstructions.trim() || undefined,
+      cliPath: provider === 'claude-subscription' ? claudeCliPath : provider === 'chatgpt-subscription' ? codexCliPath : undefined
     };
 
     try {
@@ -907,6 +913,8 @@ export const TranslatorView: React.FC<TranslatorViewProps> = ({
               <option value="gemini">Google Gemini (Gemini 2.0 / 1.5)</option>
               <option value="openai">OpenAI (GPT-4o / GPT-4o-mini / o3-mini)</option>
               <option value="anthropic">Anthropic (Claude 3.7 / 3.5 Sonnet & Haiku)</option>
+              <option value="claude-subscription">Claude Pro / Max / Team (Web Sign-in)</option>
+              <option value="chatgpt-subscription">ChatGPT Plus / Pro / Team (Web Sign-in)</option>
               <option value="groq">Groq (Ultra-Fast LPUs)</option>
               <option value="deepseek">DeepSeek (V3 / R1)</option>
               <option value="xai">xAI (Grok 2)</option>

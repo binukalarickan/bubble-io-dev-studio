@@ -693,7 +693,7 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Automated Backup via Bubble Dev Studio CLI
+      - name: Trigger Automated Backup via Bubble Studio CLI
         env:
           BUBBLE_API_TOKEN: \${{ secrets.BUBBLE_API_TOKEN }}
           BUBBLE_APP_ID: '${activeProject?.appId || 'bubble-app'}'

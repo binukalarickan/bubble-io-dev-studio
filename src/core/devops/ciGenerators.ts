@@ -42,10 +42,10 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Bubble Dev Studio CLI
+      - name: Install Bubble Studio CLI
         run: npm install -g @bubble-studio/cli@${options.cliVersion || 'latest'}
 
-      - name: Authenticate Bubble Dev Studio
+      - name: Authenticate Bubble Studio
         env:
           BUBBLE_APP_NAME: \${{ secrets.BUBBLE_APP_NAME }}
           BUBBLE_API_KEY: \${{ secrets.BUBBLE_API_KEY }}

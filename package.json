@@ -2,7 +2,7 @@
   "name": "bubble-io-dev-studio",
   "private": true,
   "version": "3.8.0",
-  "description": "Bubble.io Developer Studio - Modern local companion suite for Bubble developers (DevOps, Schema, Dead Code Audit, AI Translation, Visual QA)",
+  "description": "Bubble Studio: all-in-one developer suite & GUI for Bubble.io (DevOps, Schema, Dead Code Audit, AI Translation, Visual QA)",
   "main": "dist-electron/main.js",
   "author": {
     "name": "Alexandr Motologa | MTLG Labs",
@@ -70,7 +70,7 @@
   },
   "build": {
     "appId": "com.bubbleio.devstudio",
-    "productName": "Bubble.io Dev Studio",
+    "productName": "Bubble Studio",
     "icon": "build/icon.png",
     "publish": [
       {

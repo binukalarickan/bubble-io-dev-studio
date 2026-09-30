@@ -3,8 +3,15 @@ import path from 'path';
 import fs from 'fs';
 import http from 'http';
 import { autoUpdater } from 'electron-updater';
+import { registerAiCliHandlers } from './aiCli';
 
 let mainWindow: BrowserWindow | null = null;
+
+// The product was renamed from "Bubble.io Dev Studio"; keep its profile folder so saved projects and credentials survive
+const legacyUserData = path.join(app.getPath('appData'), 'Bubble.io Dev Studio');
+if (app.isPackaged && fs.existsSync(legacyUserData)) {
+  app.setPath('userData', legacyUserData);
+}
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
@@ -133,13 +140,13 @@ function createAppMenu() {
         },
         { type: 'separator' },
         {
-          label: 'About Bubble.io Dev Studio',
+          label: 'About Bubble Studio',
           click: () => {
             if (mainWindow) {
               dialog.showMessageBox(mainWindow, {
                 type: 'info',
-                title: 'About Bubble.io Dev Studio',
-                message: `Bubble.io Dev Studio v${app.getVersion()} (Production Stable)`,
+                title: 'About Bubble Studio',
+                message: `Bubble Studio v${app.getVersion()}`,
                 detail: `All-in-one Developer Studio & GUI for Bubble.io (DevOps, Schema, Dead Code Audit, AI Translation, Visual QA)\n\nAuthor: Alexandr Motologa | MTLG Labs`,
                 buttons: ['OK']
               });
@@ -160,7 +167,7 @@ function createWindow() {
     height: 900,
     minWidth: 1080,
     minHeight: 700,
-    title: 'Bubble.io Dev Studio',
+    title: 'Bubble Studio',
     icon: process.platform === 'win32'
       ? path.join(__dirname, '../build/icon.ico')
       : path.join(__dirname, '../build/icon.png'),
@@ -223,6 +230,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  registerAiCliHandlers(() => mainWindow);
   createWindow();
   initDownloadsWatcher(true);
 
@@ -859,7 +867,6 @@ ipcMain.handle('webhookServer:status', async () => {
     port: webhookServerPort
   };
 });
-
 
 
 

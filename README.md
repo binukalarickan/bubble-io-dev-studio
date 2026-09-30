@@ -1,4 +1,4 @@
-# Bubble.io Dev Studio
+# Bubble Studio
 
 [![Version](https://img.shields.io/badge/Version-3.8.0-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg?style=flat&logo=typescript)](https://www.typescriptlang.org/)
@@ -8,7 +8,7 @@
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-informational.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Bubble.io Dev Studio is a desktop IDE for Bubble.io developers, agencies, and QA teams. It brings together tools for live database management, workflow visualization, AI localization, visual regression testing, dead code detection, privacy rule audits, and documentation generation.
+Bubble Studio is a desktop IDE for Bubble.io developers, agencies, and QA teams. It brings together tools for live database management, workflow visualization, AI localization, visual regression testing, dead code detection, privacy rule audits, and documentation generation.
 
 <p align="center">
   <img src="docs/screenshots/01_workspace_overview.png" alt="Bubble.io Dev Studio - Workspace Overview" width="880" style="border-radius: 10px; border: 1px solid #1e293b;" />
@@ -83,7 +83,7 @@ Pre-built binaries for running the desktop app directly:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                   Bubble.io Dev Studio                                          │
+│                                   Bubble Studio                                                 │
 ├───────────────────┬───────────────────┬───────────────────┬───────────────────┬─────────────────┤
 │ DevOps & Data     │ Workflow Nodes    │ Security & RBAC   │ WU Cost Profiler  │ Dead Code AST   │
 │   • Data Studio   │   • Flowchart Map │   • RBAC Matrix   │   • Search Audit  │   • DAG Tree    │
@@ -209,6 +209,7 @@ For technical details, see the [Cloud Direct Sync Guide](docs/cloud-sync-guide.m
 * **Sync Button**: Reloads original Option Sets and strings from the project blueprint at any time.
 * **Matrix Translation**: Batch translates strings across multiple target languages simultaneously.
 * **Supported AI Providers**: Google Gemini, OpenAI (GPT-4o, o3-mini), Anthropic Claude (3.7, 3.5), DeepSeek (V3, R1), Groq, xAI (Grok 2), OpenCode, OpenRouter, and local Ollama.
+* **Use your Claude or ChatGPT plan, no API key needed**: Sign in with your browser to a Claude Pro/Max/Team or ChatGPT Plus/Pro/Team account. Requests run through the official Claude Code or Codex CLI installed on your machine. See the [Settings guide](docs/settings-guide.md).
 * **Translation Memory & Glossary**: Caches translations using hash keys in IndexedDB to avoid repeated calls, with token protection for Bubble dynamic values (`[Current User]`).
 
 ### 8. Visual QA & Viewport Testing
@@ -318,7 +319,7 @@ npm run dist:win
 Distributed under the **MIT License**. See [LICENSE](LICENSE) for details.
 
 <p align="center">
-  <b>Bubble.io Dev Studio</b> by <b><a href="https://mtlg.site">Alexandr Motologa</a></b> | <b><a href="https://mtlglabs.space">MTLG Labs</a></b>
+  <b>Bubble Studio</b> by <b><a href="https://mtlg.site">Alexandr Motologa</a></b> | <b><a href="https://mtlglabs.space">MTLG Labs</a></b>
 </p>
 <p align="center">
   <a href="https://mtlglabs.space">MTLG Labs</a> • 

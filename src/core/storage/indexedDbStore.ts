@@ -1,5 +1,5 @@
 /**
- * Native Promise-based IndexedDB storage for Bubble Dev Studio
+ * Native Promise-based IndexedDB storage for Bubble Studio
  * Handles large blueprints (.bubble files), translations cache, backups, and visual test baselines.
  * Completely eliminates browser localStorage 5MB quota limits.
  */

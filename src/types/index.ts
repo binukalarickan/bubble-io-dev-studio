@@ -49,6 +49,9 @@ export interface GlobalSettings {
   xaiApiKey?: string;
   opencodeApiKey?: string;
   ollamaUrl?: string;
+  /** Optional explicit paths for the CLIs behind subscription (web sign-in) providers */
+  claudeCliPath?: string;
+  codexCliPath?: string;
   defaultAiModel: string;
   autoSaveReports: boolean;
   autoBackupInterval?: 'disabled' | '6h' | '12h' | '24h';
@@ -350,7 +353,9 @@ export type TranslationProviderType =
   | 'deepseek'
   | 'xai' 
   | 'opencode' 
-  | 'ollama';
+  | 'ollama'
+  | 'claude-subscription'
+  | 'chatgpt-subscription';
 
 export interface TranslationItem {
   id: string;
@@ -377,6 +382,7 @@ export interface TranslationJobConfig {
   apiKey?: string;
   ollamaUrl?: string;
   customPromptInstructions?: string;
+  cliPath?: string;
 }
 
 export interface TranslationJobResult {
@@ -1207,4 +1213,3 @@ declare global {
     };
   }
 }
-

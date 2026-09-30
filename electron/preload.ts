@@ -48,6 +48,15 @@ export interface ElectronAPI {
   stopWebhookServer: () => Promise<{ success: boolean; message?: string }>;
   getWebhookServerStatus: () => Promise<{ isRunning: boolean; port?: number }>;
   onWebhookReceived: (callback: (payload: any) => void) => () => void;
+  aiCli: {
+    status: (tool: string, customPath?: string) => Promise<any>;
+    login: (tool: string, customPath?: string) => Promise<{ success: boolean; detail: string }>;
+    sendLoginInput: (tool: string, text: string) => Promise<boolean>;
+    cancelLogin: (tool: string) => Promise<void>;
+    logout: (tool: string, customPath?: string) => Promise<{ success: boolean; detail?: string }>;
+    complete: (tool: string, opts: { systemPrompt: string; prompt: string; model?: string; customPath?: string; timeoutMs?: number }) => Promise<{ success: boolean; text?: string; tokensUsed?: number; error?: string }>;
+    onLoginOutput: (func: (payload: { tool: string; text: string; urls: string[] }) => void) => () => void;
+  };
 }
 
 const ALLOWED_SEND_CHANNELS = new Set<string>([
@@ -170,8 +179,22 @@ const api: ElectronAPI = {
     return () => {
       ipcRenderer.removeListener('webhook:received', subscription);
     };
+  },
+  aiCli: {
+    status: (tool, customPath) => ipcRenderer.invoke('ai-cli:status', tool, customPath),
+    login: (tool, customPath) => ipcRenderer.invoke('ai-cli:login', tool, customPath),
+    sendLoginInput: (tool, text) => ipcRenderer.invoke('ai-cli:login-input', tool, text),
+    cancelLogin: (tool) => ipcRenderer.invoke('ai-cli:login-cancel', tool),
+    logout: (tool, customPath) => ipcRenderer.invoke('ai-cli:logout', tool, customPath),
+    complete: (tool, opts) => ipcRenderer.invoke('ai-cli:complete', tool, opts),
+    onLoginOutput: (func) => {
+      const subscription = (_event: any, payload: any) => func(payload);
+      ipcRenderer.on('ai-cli:login-output', subscription);
+      return () => {
+        ipcRenderer.removeListener('ai-cli:login-output', subscription);
+      };
+    }
   }
 };
 
 contextBridge.exposeInMainWorld('electronAPI', api);
-

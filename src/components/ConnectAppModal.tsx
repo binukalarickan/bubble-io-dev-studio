@@ -37,6 +37,7 @@ import { ProjectProfile } from '../types';
 import { DevOpsEngine } from '../core/devops/devopsEngine';
 import { TranslatorEngine } from '../core/translator/translatorEngine';
 import { AI_PROVIDERS, PROVIDER_MODELS, getDefaultModelForProvider, getCustomModelPlaceholder } from '../core/ai/aiProviders';
+import { SubscriptionSignInPanel } from './SubscriptionSignInPanel';
 import { ProjectStore } from '../core/storage/projectStore';
 import { BubbleSyncEngine } from '../core/bubble-sync/bubbleSyncEngine';
 import { WorkflowGraphEngine } from '../core/workflows/workflowGraphEngine';
@@ -429,7 +430,10 @@ export const ConnectAppModal: React.FC<ConnectAppModalProps> = ({
         aiProvider,
         aiModel,
         effectiveKey,
-        ollamaUrl.trim() || undefined
+        ollamaUrl.trim() || undefined,
+        aiProvider === 'claude-subscription' ? globalSettings.claudeCliPath
+          : aiProvider === 'chatgpt-subscription' ? globalSettings.codexCliPath
+          : undefined
       );
       setAiTestResult({
         success: res.success,
@@ -1061,6 +1065,8 @@ export const ConnectAppModal: React.FC<ConnectAppModalProps> = ({
                       <option value="gemini">Google Gemini {getSavedKey('gemini') ? '• Saved Key ✓' : ''}</option>
                       <option value="openai">OpenAI (GPT-4o) {getSavedKey('openai') ? '• Saved Key ✓' : ''}</option>
                       <option value="anthropic">Anthropic (Claude) {getSavedKey('anthropic') ? '• Saved Key ✓' : ''}</option>
+                      <option value="claude-subscription">Claude Pro / Max / Team (Web Sign-in, no key)</option>
+                      <option value="chatgpt-subscription">ChatGPT Plus / Pro / Team (Web Sign-in, no key)</option>
                       <option value="groq">Groq (LPU Inference) {getSavedKey('groq') ? '• Saved Key ✓' : ''}</option>
                       <option value="deepseek">DeepSeek (V3/R1) {getSavedKey('deepseek') ? '• Saved Key ✓' : ''}</option>
                       <option value="xai">xAI (Grok 2) {getSavedKey('xai') ? '• Saved Key ✓' : ''}</option>
@@ -1142,6 +1148,11 @@ export const ConnectAppModal: React.FC<ConnectAppModalProps> = ({
                       </div>
                     )}
                   </div>
+                ) : (aiProvider === 'claude-subscription' || aiProvider === 'chatgpt-subscription') ? (
+                  <SubscriptionSignInPanel
+                    providerId={aiProvider}
+                    cliPath={aiProvider === 'claude-subscription' ? globalSettings.claudeCliPath : globalSettings.codexCliPath}
+                  />
                 ) : (
                   <div>
                     {useGlobalKey && hasGlobalKeyForCurrent ? (
@@ -1783,7 +1794,7 @@ export const ConnectAppModal: React.FC<ConnectAppModalProps> = ({
                   Ready to Launch {name || appId}!
                 </h3>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, marginTop: '2px' }}>
-                  All 4 configuration pillars verified for full developer studio operations
+                  All 4 configuration pillars verified for full Bubble Studio operations
                 </p>
               </div>
 

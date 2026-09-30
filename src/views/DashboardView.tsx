@@ -104,7 +104,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <h2 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '8px', color: 'var(--text-primary)' }}>
-            Welcome to Bubble.io Dev Studio
+            Welcome to Bubble Studio
           </h2>
           <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', maxWidth: '540px', margin: '0 auto 24px', lineHeight: 1.6 }}>
             Developer workspace for Bubble.io. Manage schemas, detect unused code, translate strings with AI, and run regression tests.

@@ -19,6 +19,9 @@ import {
   getDefaultModelForProvider 
 } from '../../core/ai/aiProviders';
 import { toast } from '../../core/toast/toastManager';
+import { SubscriptionSignInPanel } from '../../components/SubscriptionSignInPanel';
+import { isSubscriptionProvider } from '../../core/ai/subscriptionAuth';
+import { TranslatorEngine } from '../../core/translator/translatorEngine';
 
 interface ApiKeysTabProps {
   formData: GlobalSettings;
@@ -113,7 +116,16 @@ export const ApiKeysTab: React.FC<ApiKeysTabProps> = ({
 
       const start = performance.now();
 
-      if (selectedProvider === 'gemini') {
+      if (isSubscriptionProvider(selectedProvider)) {
+        const cliPath = selectedProvider === 'claude-subscription' ? formData.claudeCliPath : formData.codexCliPath;
+        const result = await TranslatorEngine.verifyProviderConnection(
+          selectedProvider, formData.defaultAiModel, undefined, formData.ollamaUrl, cliPath
+        );
+        setProviderTestResult({ success: result.success, latency: result.latencyMs, message: result.message });
+        if (result.success) toast.success(result.message);
+        else toast.error(result.message);
+        return;
+      } else if (selectedProvider === 'gemini') {
         if (!keyToTest) throw new Error('Google Gemini API Key is missing.');
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${keyToTest}`;
         const res = await fetch(url, {
@@ -471,11 +483,23 @@ export const ApiKeysTab: React.FC<ApiKeysTabProps> = ({
             </div>
           )}
 
+          {isSubscriptionProvider(selectedProvider) && (
+            <SubscriptionSignInPanel
+              providerId={selectedProvider}
+              cliPath={selectedProvider === 'claude-subscription' ? formData.claudeCliPath : formData.codexCliPath}
+              onCliPathChange={(path) => setFormData(
+                selectedProvider === 'claude-subscription'
+                  ? { ...formData, claudeCliPath: path }
+                  : { ...formData, codexCliPath: path }
+              )}
+            />
+          )}
+
           {/* Test Connection Button for Selected Provider */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-input)', border: '1px solid var(--border-subtle)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                Verify {selectedProvider.toUpperCase()} Credentials & Model
+                Verify {getProviderDisplayName(selectedProvider)} Credentials & Model
               </span>
               <button
                 type="button"

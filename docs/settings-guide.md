@@ -35,6 +35,10 @@ The Settings & Integrations view manages AI provider credentials, workspace conn
 - **Custom Model Identifiers**: Enter any custom model name or fine-tuned variant.
 - **Connection Test**: Test network reachability and round-trip response time in milliseconds.
 - **Key Visibility**: Toggle between masked and unmasked display for screen sharing.
+- **Subscription Sign-in (no API key)**: Choose **Claude Pro / Max / Team** or **ChatGPT Plus / Pro / Team** and click **Sign in with browser**. Bubble Studio runs the official CLI for that plan (Claude Code or the Codex CLI), which opens your browser to sign in and keeps the tokens itself; Bubble Studio never stores them. Requests count against your plan's usage limits.
+  - Requires the CLI on this computer: [Claude Code](https://docs.claude.com/en/docs/claude-code/setup) or `npm install -g @openai/codex`. If it isn't found automatically, set its path with **CLI path**.
+  - If the sign-in page shows an authorization code instead of redirecting, paste it into the field shown during sign-in.
+  - Each request starts a CLI process, so large translation batches are slower than with an API key.
 
 ### 2. Bubble Apps & Workspaces
 - **Connection Wizard**:

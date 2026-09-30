@@ -1,6 +1,6 @@
 # System Architecture & Technical Specifications
 
-This document covers the internal architecture, data flow, storage strategies, and synchronization options in Bubble.io Dev Studio.
+This document covers the internal architecture, data flow, storage strategies, and synchronization options in Bubble Studio.
 
 ---
 
@@ -25,7 +25,7 @@ graph TD
         DW[Downloads Folder Watcher: ~/Downloads/*.bubble]
     end
 
-    subgraph "Bubble.io Dev Studio Desktop Core (Electron 34 + React 18)"
+    subgraph "Bubble Studio Desktop Core (Electron 34 + React 18)"
         IPC[Electron IPC Bridge & SafeStorage]
         UPD[Native Auto-Updater: electron-updater]
         WS[Local Webhook Mock Server: Port 4040]
@@ -207,4 +207,3 @@ Dev Studio includes an embedded Node HTTP server in the Electron main process fo
 * **Token-Bucket Rate Limiter**: Enforces a strict 10 requests/second ceiling to respect Bubble Data API throughput thresholds.
 * **Two-Way IPC HTTP Bridge**: Routes network requests via Electron main process (`http:request`) to bypass renderer CORS restrictions.
 * **Transactional Tracking & Rollback**: Records every generated Bubble `_id` and provides single-click rollback deleting seeded records in reverse topological order.
-

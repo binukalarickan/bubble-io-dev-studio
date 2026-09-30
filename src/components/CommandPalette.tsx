@@ -453,7 +453,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             <span><kbd style={{ background: 'var(--bg-input)', padding: '2px 4px', borderRadius: '3px', border: '1px solid var(--border-subtle)' }}>Esc</kbd> Dismiss</span>
           </div>
           <div>
-            <span>Bubble.io Dev Studio</span>
+            <span>Bubble Studio</span>
           </div>
         </div>
       </div>

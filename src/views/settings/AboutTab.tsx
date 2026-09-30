@@ -285,7 +285,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({
         </div>
 
         <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.65, margin: '0 0 16px' }}>
-          <strong>Bubble.io Dev Studio</strong> is a desktop workspace for Bubble.io developers. It provides tools for database schemas, dead code audits, workload unit profiling, webhooks, documentation generation, localization, and visual testing.
+          <strong>Bubble Studio</strong> is a desktop workspace for Bubble.io developers. It provides tools for database schemas, dead code audits, workload unit profiling, webhooks, documentation generation, localization, and visual testing.
         </p>
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', paddingTop: '14px', borderTop: '1px solid var(--border-subtle)' }}>

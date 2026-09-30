@@ -212,7 +212,7 @@ export const App: React.FC = () => {
 
   // Initial welcome log & check if first run onboarding is needed
   useEffect(() => {
-    addLog('system', `Bubble.io Dev Studio v${APP_VERSION} initialized.`, 'success');
+    addLog('system', `Bubble Studio v${APP_VERSION} initialized.`, 'success');
     const hasCompletedOnboarding = localStorage.getItem('bubble_dev_studio_onboarding_completed') === 'true';
     if (!hasCompletedOnboarding && settings.projects.length === 0) {
       setIsOnboardingOpen(true);
@@ -541,6 +541,8 @@ export const App: React.FC = () => {
                 xaiApiKey={settings.xaiApiKey}
                 opencodeApiKey={settings.opencodeApiKey}
                 ollamaUrl={settings.ollamaUrl}
+                claudeCliPath={settings.claudeCliPath}
+                codexCliPath={settings.codexCliPath}
               />
             )}
 
@@ -631,6 +633,8 @@ export const App: React.FC = () => {
       {/* Bottom IDE Status Bar */}
       {(() => {
         const hasKey = (providerId: string) => {
+          // Subscription plans sign in through their CLI; their live status is shown in Settings
+          if (providerId === 'claude-subscription' || providerId === 'chatgpt-subscription') return true;
           if (activeProject?.aiProvider === providerId && activeProject?.aiApiKey && activeProject.aiApiKey.trim().length > 0) return true;
           switch (providerId) {
             case 'gemini': return Boolean(settings.geminiApiKey && settings.geminiApiKey.trim().length > 0);

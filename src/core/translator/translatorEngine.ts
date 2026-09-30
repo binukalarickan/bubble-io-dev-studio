@@ -243,8 +243,9 @@ export class TranslatorEngine {
     provider: string,
     model: string,
     apiKey?: string,
-    ollamaUrl?: string
+    ollamaUrl?: string,
+    cliPath?: string
   ) {
-    return AiProvidersEngine.verifyProviderConnection(provider, model, apiKey, ollamaUrl);
+    return AiProvidersEngine.verifyProviderConnection(provider, model, apiKey, ollamaUrl, cliPath);
   }
 }

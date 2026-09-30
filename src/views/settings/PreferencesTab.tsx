@@ -24,7 +24,7 @@ export const PreferencesTab: React.FC<PreferencesTabProps> = ({
               <Palette size={18} color="var(--primary)" />
               <span>Studio Visual Theme</span>
             </div>
-            <div className="card-subtitle">Select visual skin for Bubble Dev Studio</div>
+            <div className="card-subtitle">Select visual skin for Bubble Studio</div>
           </div>
         </div>
 

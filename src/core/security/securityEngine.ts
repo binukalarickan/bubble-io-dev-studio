@@ -247,7 +247,7 @@ export class SecurityEngine {
         {
           tool: {
             driver: {
-              name: 'Bubble.io Dev Studio Security Engine',
+              name: 'Bubble Studio Security Engine',
               version: '2.4.0-beta',
               informationUri: 'https://github.com/alexandrmotologa/bubble-io-dev-studio',
               rules: [
@@ -318,7 +318,7 @@ export class SecurityEngine {
     ).join('\n\n');
 
     return `# 🛡️ Bubble.io Enterprise Security & RBAC Audit Report
-> Generated: ${new Date(report.timestamp).toLocaleString()} • Engine: Bubble.io Dev Studio
+> Generated: ${new Date(report.timestamp).toLocaleString()} • Engine: Bubble Studio
 
 ---
 
@@ -359,7 +359,7 @@ ${report.exposedSensitiveFields.length === 0
 ${remediationList || 'No urgent Privacy Rule remediations needed.'}
 
 ---
-*Report generated automatically by Bubble.io Dev Studio • Confidential & Proprietary*
+*Report generated automatically by Bubble Studio • Confidential & Proprietary*
 `;
   }
 }

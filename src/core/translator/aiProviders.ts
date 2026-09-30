@@ -1,5 +1,6 @@
 import { TranslationItem, TranslationJobConfig } from '../../types';
 import { getLanguageDisplayName } from './bubbleLanguages';
+import { SubscriptionAuth, isSubscriptionProvider, SUBSCRIPTION_PROVIDERS } from '../ai/subscriptionAuth';
 
 export class AiProvidersEngine {
   /**
@@ -183,7 +184,7 @@ export class AiProvidersEngine {
     const model = config.model;
     const systemPrompt = this.buildMultiLanguagePrompt(targetLanguages, config);
 
-    if (!effectiveApiKey && provider !== 'ollama') {
+    if (!effectiveApiKey && provider !== 'ollama' && !isSubscriptionProvider(provider)) {
       throw new Error(`API key required for ${provider.toUpperCase()} translation.`);
     }
 
@@ -191,8 +192,13 @@ export class AiProvidersEngine {
       let rawOutput = '';
       let tokensUsed = 0;
 
+      if (isSubscriptionProvider(provider)) {
+        const res = await SubscriptionAuth.complete(provider, systemPrompt, `Text to translate:\n${text}`, model, config.cliPath);
+        rawOutput = res.text.trim();
+        tokensUsed = res.tokensUsed || Math.round((text.length + rawOutput.length) / 3.5);
+      }
       // 1. Google Gemini
-      if (provider === 'gemini') {
+      else if (provider === 'gemini') {
         const targetModel = (model || 'gemini-2.0-flash').replace(/^models\//, '').trim();
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${effectiveApiKey}`;
         const controller = new AbortController();
@@ -418,7 +424,7 @@ export class AiProvidersEngine {
     const model = config.model;
     const systemPrompt = this.buildSystemPrompt(config);
 
-    if (!effectiveApiKey && provider !== 'ollama') {
+    if (!effectiveApiKey && provider !== 'ollama' && !isSubscriptionProvider(provider)) {
       throw new Error(`API key required for ${provider.toUpperCase()} translation. Please configure it in Settings or your Project Profile.`);
     }
 
@@ -426,8 +432,15 @@ export class AiProvidersEngine {
       let translatedText = '';
       let tokensUsed = 0;
 
+      // 0. Subscription plans (Claude / ChatGPT web sign-in) via the official CLIs
+      if (isSubscriptionProvider(provider)) {
+        const res = await SubscriptionAuth.complete(provider, systemPrompt, `Text to translate:\n${text}`, model, config.cliPath);
+        translatedText = res.text.trim();
+        tokensUsed = res.tokensUsed || Math.round((text.length + translatedText.length) / 3.5);
+      }
+
       // 1. Google Gemini
-      if (provider === 'gemini') {
+      else if (provider === 'gemini') {
         const targetModel = (model || 'gemini-2.0-flash').replace(/^models\//, '').trim();
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${effectiveApiKey}`;
         const controller = new AbortController();
@@ -667,9 +680,27 @@ export class AiProvidersEngine {
     provider: string,
     model: string,
     apiKey?: string,
-    ollamaUrl?: string
+    ollamaUrl?: string,
+    cliPath?: string
   ): Promise<{ success: boolean; latencyMs: number; message: string }> {
     const effectiveKey = (apiKey || '').trim();
+
+    // Subscription plans: confirm the CLI is signed in to a plan, then send a one-word ping through the chosen model
+    if (isSubscriptionProvider(provider)) {
+      const meta = SUBSCRIPTION_PROVIDERS[provider];
+      const start = performance.now();
+      const status = await SubscriptionAuth.getStatus(provider, cliPath);
+      if (!status.installed || !status.signedIn) {
+        return { success: false, latencyMs: Math.round(performance.now() - start), message: status.detail };
+      }
+      try {
+        await SubscriptionAuth.complete(provider, 'Reply with the single word OK.', 'Connection test', model, cliPath);
+        const latencyMs = Math.round(performance.now() - start);
+        return { success: true, latencyMs, message: `${meta.cliName}: ${status.detail} Model '${model}' responded.` };
+      } catch (err: any) {
+        return { success: false, latencyMs: Math.round(performance.now() - start), message: err.message };
+      }
+    }
 
     // 2. Local Ollama Server Ping
     if (provider === 'ollama') {

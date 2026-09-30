@@ -13,6 +13,8 @@ export interface AiProviderDefinition {
   docsUrl: string;
   keyPlaceholder: string;
   isLocal?: boolean;
+  /** 'subscription' providers sign in through the browser with a consumer/team plan instead of an API key */
+  authMode?: 'api-key' | 'subscription';
   models: AiModelDefinition[];
 }
 
@@ -81,6 +83,34 @@ export const AI_PROVIDERS: AiProviderDefinition[] = [
       { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet v2 (State-of-the-Art)' },
       { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku (Ultra Fast)' },
       { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus' }
+    ]
+  },
+  {
+    id: 'claude-subscription',
+    name: 'Claude (Subscription)',
+    displayName: 'Claude Pro / Max / Team (Web Sign-in, no API key)',
+    description: 'Use your Claude.ai plan through the official Claude Code CLI; sign in with your browser',
+    docsUrl: 'https://docs.claude.com/en/docs/claude-code/setup',
+    keyPlaceholder: 'No key required — sign in with browser',
+    authMode: 'subscription',
+    models: [
+      { id: 'claude-sub:sonnet', name: 'Claude Sonnet (latest)', isRecommended: true },
+      { id: 'claude-sub:opus', name: 'Claude Opus (latest)' },
+      { id: 'claude-sub:haiku', name: 'Claude Haiku (latest, fastest)' }
+    ]
+  },
+  {
+    id: 'chatgpt-subscription',
+    name: 'ChatGPT (Subscription)',
+    displayName: 'ChatGPT Plus / Pro / Team (Web Sign-in, no API key)',
+    description: 'Use your ChatGPT plan through the official Codex CLI; sign in with your browser',
+    docsUrl: 'https://github.com/openai/codex',
+    keyPlaceholder: 'No key required — sign in with browser',
+    authMode: 'subscription',
+    models: [
+      { id: 'chatgpt-sub:default', name: 'Account default model (Recommended)', isRecommended: true },
+      { id: 'chatgpt-sub:gpt-5', name: 'GPT-5' },
+      { id: 'chatgpt-sub:gpt-5-codex', name: 'GPT-5 Codex' }
     ]
   },
   {
