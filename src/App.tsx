@@ -17,6 +17,7 @@ import { toast } from './core/toast/toastManager';
 import { DevOpsEngine } from './core/devops/devopsEngine';
 import { AuditEngine } from './core/audit/auditEngine';
 import { getProviderDisplayName, getModelDisplayName, getProviderForModel, getDefaultModelForProvider } from './core/ai/aiProviders';
+import { isSubscriptionProvider } from './core/ai/subscriptionAuth';
 import type { DevOpsSubTab } from './views/DevOpsView';
 
 // On-demand code-split views for ultra-fast startup performance
@@ -238,6 +239,16 @@ export const App: React.FC = () => {
   };
 
   const activeProject = settings.projects.find(p => p.id === settings.activeProjectId) || settings.projects[0];
+
+  // The Copilot uses a signed-in Claude / ChatGPT plan when that is the active AI provider
+  const activeAiProvider = activeProject?.aiProvider || (settings.defaultAiModel ? getProviderForModel(settings.defaultAiModel) : undefined);
+  const copilotSubscription = isSubscriptionProvider(activeAiProvider)
+    ? {
+        subscriptionProvider: activeAiProvider,
+        subscriptionModel: activeProject?.aiProvider ? activeProject.aiModel : settings.defaultAiModel,
+        cliPath: activeAiProvider === 'claude-subscription' ? settings.claudeCliPath : settings.codexCliPath
+      }
+    : {};
 
   const activeSchema = useMemo(() => {
     if (activeProject?.blueprintExportJson) {
@@ -622,6 +633,7 @@ export const App: React.FC = () => {
             openaiApiKey={settings.openaiApiKey}
             groqApiKey={settings.groqApiKey}
             xaiApiKey={settings.xaiApiKey}
+            {...copilotSubscription}
             onApplyQueryToRepl={(dataType, constraints) => {
               setCurrentTab('devops');
               addLog('copilot', `Applied AI synthesized query filter for '${dataType}'`, 'success');
@@ -744,6 +756,7 @@ export const App: React.FC = () => {
         openaiApiKey={settings.openaiApiKey}
         groqApiKey={settings.groqApiKey}
         xaiApiKey={settings.xaiApiKey}
+        {...copilotSubscription}
       />
     </div>
   );

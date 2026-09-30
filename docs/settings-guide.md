@@ -56,13 +56,15 @@ The Settings & Integrations view manages AI provider credentials, workspace conn
 - **Local Storage Management**: Inspect storage usage and clear IndexedDB or localStorage caches.
 
 ### 4. Updates & System Diagnostics
-- **Automatic Updates**: Powered by `electron-updater` and GitHub Releases (`alexandrmotologa/bubble-io-dev-studio`).
+- **Update Feed**: Powered by `electron-updater` and this fork's GitHub Releases (`binukalarickan/bubble-io-dev-studio`).
+- **macOS Community Builds**: v3.8.3 uses ad-hoc signing without Apple notarization. Install updates manually from the latest DMG; automatic installation is not verified. See [macOS installation and troubleshooting](macos-installation.md).
 - **Update Checks**: Checks in the background for new versions on startup.
 - **Progress Tracking**: Displays download progress and transfer speeds.
 - **Restart Prompt**: Choose between restarting immediately or postponing until later.
 - **Data Retention Across Updates**:
   - Updates only modify the application binary directory (`%LOCALAPPDATA%\Programs\bubble-io-dev-studio\`).
   - Workspaces, project settings, API tokens, snapshots, and IndexedDB databases remain in `%APPDATA%\bubble-io-dev-studio\` and are preserved during updates.
+  - On macOS, replace `/Applications/Bubble Studio.app` only. The app reuses `~/Library/Application Support/Bubble.io Dev Studio/` when that legacy profile exists; otherwise, packaged builds normally use `~/Library/Application Support/Bubble Studio/`.
 
 ### 5. Diagnostics
 - **Metrics Summary**: Displays the current studio version, number of connected projects, and active AI model.

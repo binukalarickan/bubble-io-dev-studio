@@ -1,4 +1,5 @@
 import { BubbleSchema } from '../../types';
+import { SubscriptionAuth } from './subscriptionAuth';
 
 export interface RegexGenerationResult {
   pattern: string;
@@ -44,14 +45,66 @@ export interface CopilotApiKeys {
   xaiApiKey?: string;
   anthropicApiKey?: string;
   ollamaUrl?: string;
+  /** Set when the active AI provider is a Claude / ChatGPT subscription (web sign-in) */
+  subscriptionProvider?: string;
+  subscriptionModel?: string;
+  cliPath?: string;
 }
 
 export class CopilotEngine {
+  /**
+   * Runs a JSON-returning prompt through a signed-in subscription CLI; null on any failure so callers fall back
+   */
+  private static async askSubscriptionForJson(keys: CopilotApiKeys, instructions: string): Promise<any | null> {
+    if (!keys.subscriptionProvider) return null;
+    try {
+      const res = await SubscriptionAuth.complete(
+        keys.subscriptionProvider,
+        'Return ONLY a valid JSON object. No markdown code fences, no commentary.',
+        instructions,
+        keys.subscriptionModel,
+        keys.cliPath
+      );
+      const raw = res.text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+      const start = raw.indexOf('{');
+      const end = raw.lastIndexOf('}');
+      return start >= 0 && end > start ? JSON.parse(raw.slice(start, end + 1)) : null;
+    } catch (err) {
+      console.warn('[CopilotEngine] Subscription provider request failed, applying heuristic fallback:', err);
+      return null;
+    }
+  }
+
   /**
    * Generates a regular expression and Bubble formula using Live AI or rule-based heuristics
    */
   public static async generateRegex(prompt: string, keys?: CopilotApiKeys): Promise<RegexGenerationResult> {
     const effectiveKey = keys?.geminiApiKey || keys?.openaiApiKey || keys?.groqApiKey;
+
+    // 0. Signed-in Claude / ChatGPT subscription
+    if (keys?.subscriptionProvider) {
+      const parsed = await this.askSubscriptionForJson(keys, `You are a Regex & Bubble.io Expression Expert. Return ONLY a valid JSON object with:
+{
+  "pattern": "regex pattern without enclosing slashes",
+  "flags": "i or g or empty",
+  "bubbleFormula": "Input's value :extract with Regex (...):first item is not empty",
+  "explanation": "brief plain text explanation",
+  "sampleMatches": ["match1", "match2"],
+  "sampleNonMatches": ["nonmatch1", "nonmatch2"]
+}
+
+Task: Generate a regex pattern for: "${prompt}"`);
+      if (parsed?.pattern) {
+        return {
+          pattern: parsed.pattern,
+          flags: parsed.flags || '',
+          bubbleFormula: parsed.bubbleFormula || `Input's value :extract with Regex (${parsed.pattern}):first item is not empty`,
+          explanation: parsed.explanation || `Matches patterns for: ${prompt}`,
+          sampleMatches: Array.isArray(parsed.sampleMatches) ? parsed.sampleMatches : [],
+          sampleNonMatches: Array.isArray(parsed.sampleNonMatches) ? parsed.sampleNonMatches : []
+        };
+      }
+    }
 
     // 1. If live Gemini API key is available, execute real LLM generation
     if (keys?.geminiApiKey) {
@@ -251,14 +304,11 @@ export class CopilotEngine {
     const p = prompt.toLowerCase();
     let targetType = availableTypes.find(t => p.includes(t.toLowerCase())) || availableTypes[0] || 'Order';
 
-    // 1. If live Gemini API key is available, execute LLM with real schema context
-    if (keys?.geminiApiKey) {
-      try {
-        const schemaContext = schema ? `Available Tables and Fields:\n` + schema.dataTypes.map(dt => 
-          `- ${dt.name} (fields: ${dt.fields.map(f => `${f.name}:${f.type}`).join(', ')})`
-        ).join('\n') : `Common Tables: User, Order, Product, Transaction`;
+    const schemaContext = schema ? `Available Tables and Fields:\n` + schema.dataTypes.map(dt => 
+      `- ${dt.name} (fields: ${dt.fields.map(f => `${f.name}:${f.type}`).join(', ')})`
+    ).join('\n') : `Common Tables: User, Order, Product, Transaction`;
 
-        const sysPrompt = `You are a Bubble.io Database & Search Query Expert.
+    const sysPrompt = `You are a Bubble.io Database & Search Query Expert.
 ${schemaContext}
 
 User Prompt: "${prompt}"
@@ -276,6 +326,29 @@ Return ONLY a valid JSON object matching this exact schema:
   "optimizationTips": ["tip1", "tip2"]
 }`;
 
+    const toQueryResult = (parsed: any): SearchQueryGenerationResult | null => {
+      if (!parsed?.targetType || !Array.isArray(parsed.constraints)) return null;
+      return {
+        targetType: parsed.targetType,
+        constraints: parsed.constraints,
+        sortField: parsed.sortField || 'Created Date',
+        sortDescending: typeof parsed.sortDescending === 'boolean' ? parsed.sortDescending : true,
+        bubbleExpression: parsed.bubbleExpression || `Do a search for ${parsed.targetType}s`,
+        apiConnectorQuery: parsed.apiConnectorQuery || `GET /api/1.1/obj/${parsed.targetType.toLowerCase()}`,
+        wuCostImpact: parsed.wuCostImpact || 'low',
+        optimizationTips: Array.isArray(parsed.optimizationTips) ? parsed.optimizationTips : ['✓ AI-synthesized optimal constraint schema']
+      };
+    };
+
+    // 0. Signed-in Claude / ChatGPT subscription
+    if (keys?.subscriptionProvider) {
+      const result = toQueryResult(await this.askSubscriptionForJson(keys, sysPrompt));
+      if (result) return result;
+    }
+
+    // 1. If live Gemini API key is available, execute LLM with real schema context
+    if (keys?.geminiApiKey) {
+      try {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${keys.geminiApiKey}`;
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 8000);

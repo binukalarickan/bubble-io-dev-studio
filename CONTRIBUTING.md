@@ -1,4 +1,4 @@
-# Contributing to Bubble.io Dev Studio
+# Contributing to Bubble Studio
 
 Thank you for your interest in contributing to Bubble.io Dev Studio! We welcome contributions of all kinds, whether you are fixing a bug, improving documentation, or proposing new features.
 
@@ -58,7 +58,7 @@ Bubble.io Dev Studio requires **Node.js 20+ LTS** and npm.
 
 1. **Clone the repository and install dependencies:**
    ```bash
-   git clone https://github.com/alexandrmotologa/bubble-io-dev-studio.git
+    git clone https://github.com/binukalarickan/bubble-io-dev-studio.git
    cd bubble-io-dev-studio
    npm install
    ```
@@ -74,7 +74,13 @@ Bubble.io Dev Studio requires **Node.js 20+ LTS** and npm.
    npm run build
    ```
 
-Refer to the **Quick Start** section in [README.md](README.md) for full configuration flags, architecture details, and usage examples.
+Refer to [Local Development & Build](README.md#local-development--build) for setup and build commands.
+
+### macOS Release Changes
+
+On macOS, run `npm run dist:mac:arm64` to build the Apple Silicon DMG and ZIP. The current community build uses ad-hoc signing and verifies the bundle before packaging. Check the app extracted from the distributable as well as the build directory, and perform a launch smoke test. A successful launch alone does not prove the signature is valid.
+
+See [Building and verifying a release](docs/macos-installation.md#building-and-verifying-a-release) for commands, signing limitations, and the v3.8.1 packaging failure. Do not describe ad-hoc-signed builds as Apple-notarized or assume a local launch proves Gatekeeper accepts a browser download.
 
 ---
 

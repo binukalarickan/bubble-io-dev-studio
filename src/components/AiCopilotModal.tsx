@@ -29,6 +29,9 @@ interface AiCopilotModalProps {
   openaiApiKey?: string;
   groqApiKey?: string;
   xaiApiKey?: string;
+  subscriptionProvider?: string;
+  subscriptionModel?: string;
+  cliPath?: string;
   initialPrompt?: string;
   initialMode?: 'query' | 'regex' | 'privacy';
 }
@@ -45,6 +48,9 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
   openaiApiKey,
   groqApiKey,
   xaiApiKey,
+  subscriptionProvider,
+  subscriptionModel,
+  cliPath,
   initialPrompt,
   initialMode
 }) => {
@@ -84,7 +90,7 @@ export const AiCopilotModal: React.FC<AiCopilotModalProps> = ({
 
   if (!isOpen) return null;
 
-  const apiKeys = { geminiApiKey, openaiApiKey, groqApiKey, xaiApiKey };
+  const apiKeys = { geminiApiKey, openaiApiKey, groqApiKey, xaiApiKey, subscriptionProvider, subscriptionModel, cliPath };
 
   const handleGenerateQuery = async () => {
     if (!queryPrompt.trim()) return;

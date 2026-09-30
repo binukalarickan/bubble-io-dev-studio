@@ -1,3 +1,4 @@
+import { SubscriptionAuth, isSubscriptionProvider } from '../ai/subscriptionAuth';
 import { 
   AuditHealthReport, 
   BubbleSchema, 
@@ -22,6 +23,7 @@ export interface AiNarrativeConfig {
   apiKey?: string;
   temperature?: number;
   ollamaUrl?: string;
+  cliPath?: string;
 }
 
 export interface AiEnhanceProgress {
@@ -446,7 +448,7 @@ Keep the tone authoritative, clear, and structured in Markdown.`;
       generatedAt: new Date().toISOString(),
       appName: project.name,
       version: project.environment,
-      author: 'Bubble.io Dev Studio AI Narrative Engine',
+      author: 'Bubble Studio AI Narrative Engine',
       sections,
       stats: {
         dataTypesCount: dataTypes.length,
@@ -465,6 +467,17 @@ Keep the tone authoritative, clear, and structured in Markdown.`;
   public static async executeLlmPrompt(prompt: string, config?: AiNarrativeConfig): Promise<string | null> {
     const provider = config?.provider || 'gemini';
     const apiKey = config?.apiKey?.trim();
+
+    // Subscription plans (Claude / ChatGPT web sign-in) need no key; the CLI holds the login
+    if (isSubscriptionProvider(provider)) {
+      try {
+        const res = await SubscriptionAuth.complete(provider, 'You are a senior technical writer. Reply in GitHub-Flavored Markdown.', prompt, config?.model, config?.cliPath);
+        return res.text.trim() || null;
+      } catch (err: any) {
+        console.warn('[AiDocNarrativeEngine] Subscription provider request failed:', err.message);
+        return null;
+      }
+    }
 
     if (!apiKey && provider !== 'ollama') {
       return null;

@@ -117,11 +117,11 @@ Updating the application does not overwrite user workspaces, database snapshots,
 ### Separation of Binaries and User Data:
 * **Application Binaries (Replaced during updates)**:
   - Windows: `%LOCALAPPDATA%\Programs\bubble-io-dev-studio\`
-  - macOS: `/Applications/Bubble.io Dev Studio.app/`
+   - macOS: `/Applications/Bubble Studio.app/`
   - Linux: AppImage or `/opt/`
 * **Persistent User Data (Retained during updates)**:
   - Windows: `%APPDATA%\bubble-io-dev-studio\`
-  - macOS: `~/Library/Application Support/bubble-io-dev-studio/`
+   - macOS packaged builds: `~/Library/Application Support/Bubble Studio/`, or `~/Library/Application Support/Bubble.io Dev Studio/` when the legacy profile exists. Development runs can use `~/Library/Application Support/bubble-io-dev-studio/`.
   - Linux: `~/.config/bubble-io-dev-studio/`
 
 This user profile directory stores:
@@ -129,10 +129,18 @@ This user profile directory stores:
 2. LocalStorage settings (project configurations and window sizes).
 3. Credentials encrypted through native OS keyrings (DPAPI on Windows, Keychain on macOS, Secret Service on Linux).
 
-When `autoUpdater.quitAndInstall(false, true)` runs:
+The intended automatic-update flow, on builds that support automatic installation, is:
 1. The installer replaces the executable files in the program directory.
 2. The user profile directory remains untouched.
 3. The app relaunches with all existing projects, snapshots, and tokens intact.
+
+The fork's release feed is `binukalarickan/bubble-io-dev-studio`. Its v3.8.3 macOS build uses ad-hoc signing and has not been verified for automatic installation; use the DMG to replace the app manually. The legacy-profile selection in `electron/main.ts` preserves saved data across the product rename.
+
+### macOS Packaging and Signature Verification
+
+`scripts/sign-mac-adhoc.cjs` runs in the `afterPack` hook. It uses `@electron/osx-sign` to sign the app and nested Electron components with an ad-hoc identity. Hardened Runtime is disabled for this community build because it has no Apple Team ID for library validation. `mac.identity` is `null` to skip electron-builder's separate certificate-signing pass.
+
+`scripts/verify-mac-signature.cjs` runs in `afterSign` and fails packaging if `codesign --verify --deep --strict` rejects the app. This prevents the incomplete signature found in v3.8.1 from being packaged again. Ad-hoc signing establishes bundle integrity, not publisher identity or Apple approval. See the [macOS guide](macos-installation.md) for Gatekeeper behavior and release checks.
 
 ---
 

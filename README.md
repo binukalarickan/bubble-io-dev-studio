@@ -1,6 +1,6 @@
 # Bubble Studio
 
-[![Version](https://img.shields.io/badge/Version-3.8.0-brightgreen.svg)]()
+[![Version](https://img.shields.io/badge/Version-3.8.3-brightgreen.svg)](https://github.com/binukalarickan/bubble-io-dev-studio/releases/tag/v3.8.3)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue.svg?style=flat&logo=typescript)](https://www.typescriptlang.org/)
 [![Electron](https://img.shields.io/badge/Electron-34-47848F.svg?style=flat&logo=electron)](https://www.electronjs.org/)
 [![React](https://img.shields.io/badge/React-18-61DAFB.svg?style=flat&logo=react)](https://react.dev/)
@@ -38,24 +38,26 @@ Bubble Studio is a desktop IDE for Bubble.io developers, agencies, and QA teams.
 
 ---
 
-## Download Desktop App (v3.8.0 Pre-Built Binaries)
+## Download Desktop App
 
-Pre-built binaries for running the desktop app directly:
+This fork's **v3.8.3** release includes a native Apple Silicon build for macOS Tahoe, including M5 Macs. It includes the upstream v3.8.0 features, customized title bar, Bubble Studio branding, and Claude/ChatGPT subscription sign-in, which v3.8.3 extends to DocGen's AI chapters and the AI Copilot so they no longer ask for an API key.
 
-| Platform | Download Link (v3.8.0 Stable) | Package Format | Architecture |
+| Platform | Download (v3.8.3) | Package Format | Architecture |
 | :--- | :--- | :--- | :--- |
-| **Windows** | [Bubble.io-Dev-Studio-Setup-3.8.0.exe](https://github.com/alexandrmotologa/bubble-io-dev-studio/releases/download/v3.8.0/Bubble.io-Dev-Studio-Setup-3.8.0.exe) • [Portable .exe](https://github.com/alexandrmotologa/bubble-io-dev-studio/releases/download/v3.8.0/Bubble.io-Dev-Studio-3.8.0.exe) | NSIS Setup / Portable | x64 |
-| **macOS** | [Bubble.io-Dev-Studio-3.8.0.dmg](https://github.com/alexandrmotologa/bubble-io-dev-studio/releases/download/v3.8.0/Bubble.io-Dev-Studio-3.8.0.dmg) • [.zip](https://github.com/alexandrmotologa/bubble-io-dev-studio/releases/download/v3.8.0/Bubble.io-Dev-Studio-3.8.0-mac.zip) | Apple Disk Image / ZIP | Apple Silicon (M1-M4) & Intel |
-| **Linux** | [Bubble.io-Dev-Studio-3.8.0.AppImage](https://github.com/alexandrmotologa/bubble-io-dev-studio/releases/download/v3.8.0/Bubble.io-Dev-Studio-3.8.0.AppImage) | AppImage format | x64 |
+| **macOS / Apple Silicon** | [DMG installer](https://github.com/binukalarickan/bubble-io-dev-studio/releases/download/v3.8.3/Bubble.io-Dev-Studio-3.8.3-arm64.dmg) · [ZIP archive](https://github.com/binukalarickan/bubble-io-dev-studio/releases/download/v3.8.3/Bubble.io-Dev-Studio-3.8.3-arm64.zip) | Apple Disk Image / ZIP | ARM64; no Rosetta required |
 
-> **Release Page**: [View v3.8.0 release notes on GitHub](https://github.com/alexandrmotologa/bubble-io-dev-studio/releases/tag/v3.8.0) | [Latest Release](https://github.com/alexandrmotologa/bubble-io-dev-studio/releases/latest)
->
-> **Windows Installation Note**: Because this open-source build does not carry a paid EV code-signing certificate, Windows SmartScreen may display "Windows protected your PC". Click **More info** and select **Run anyway** to launch the installer.
+Open the DMG, drag **Bubble Studio** into **Applications**, then launch it from there. Quit an older copy before replacing it. The filenames retain `Bubble.io-Dev-Studio` for release naming compatibility; the installed app is `Bubble Studio.app`.
+
+**Signing:** v3.8.3 has a verified ad-hoc signature, but is not Apple Developer ID signed or notarized. macOS may still block downloaded copies. See the [macOS installation and troubleshooting guide](docs/macos-installation.md) for approval steps and the fix for the v3.8.1 “damaged app” error.
+
+[v3.8.3 release notes](https://github.com/binukalarickan/bubble-io-dev-studio/releases/tag/v3.8.3) · [Latest fork release](https://github.com/binukalarickan/bubble-io-dev-studio/releases/latest)
+
+Windows, Linux, and Intel Mac binaries are not included in this fork's v3.8.3 release. For the original project's builds, visit [upstream releases](https://github.com/alexandrmotologa/bubble-io-dev-studio/releases); those builds do not include this fork's customizations.
 
 ---
 
 ## Table of Contents
-- [Download Desktop App](#download-desktop-app-v339-pre-built-binaries)
+- [Download Desktop App](#download-desktop-app)
 - [Architecture & Modules Overview](#architecture--modules-overview)
 - [Blueprint Synchronization Options](#blueprint-synchronization-options)
 - [Quick Start Guide](#quick-start-guide)
@@ -233,7 +235,7 @@ For technical details, see the [Cloud Direct Sync Guide](docs/cloud-sync-guide.m
 * **Export Options**: Export to Markdown (`.md`), standalone HTML with embedded diagrams, JSON architecture specifications, or PDF.
 
 ### 11. Application Updates & Local Storage
-* **Auto-Updates**: Uses `electron-updater` connected to GitHub Releases (`alexandrmotologa/bubble-io-dev-studio`).
+* **Update Feed**: Uses `electron-updater` connected to this fork's GitHub Releases (`binukalarickan/bubble-io-dev-studio`). For the ad-hoc-signed macOS build, install updates manually from the DMG; automatic installation has not been verified.
 * **Download Tracking**: Shows download speed and progress.
 * **Restart Prompts**: Offers options to restart immediately or postpone until later.
 * **Data Separation**: Application binaries reside in `%LOCALAPPDATA%\Programs\bubble-io-dev-studio\`, while projects, credentials, snapshots, and IndexedDB data stay in `%APPDATA%\bubble-io-dev-studio\` so updates do not overwrite your settings.
@@ -255,6 +257,7 @@ For technical details, see the [Cloud Direct Sync Guide](docs/cloud-sync-guide.m
 
 Technical guides are available in the [`docs/`](docs/) directory:
 
+- [macOS Tahoe / Apple Silicon Installation & Signing](docs/macos-installation.md)
 - [Cloud Direct Sync Guide](docs/cloud-sync-guide.md)
 - [System Architecture & Storage Specifications](docs/architecture.md)
 - [DevOps & Database Studio Guide](docs/devops-guide.md)
@@ -290,7 +293,7 @@ Technical guides are available in the [`docs/`](docs/) directory:
 ### Local Development
 ```bash
 # 1. Clone repository
-git clone https://github.com/alexandrmotologa/bubble-io-dev-studio.git
+git clone https://github.com/binukalarickan/bubble-io-dev-studio.git
 cd bubble-io-dev-studio
 
 # 2. Install dependencies
@@ -310,7 +313,12 @@ npm run build:vite
 
 # Package Windows desktop installer
 npm run dist:win
+
+# Package native Apple Silicon DMG and ZIP on macOS
+npm run dist:mac:arm64
 ```
+
+The macOS build ad-hoc signs the app and verifies its complete signature before packaging. See [macOS build and release verification](docs/macos-installation.md#building-and-verifying-a-release) for details.
 
 ---
 

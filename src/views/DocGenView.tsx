@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { isSubscriptionProvider } from '../core/ai/subscriptionAuth';
 import { 
   BookOpen, 
   Download, 
@@ -120,7 +121,10 @@ export const DocGenView: React.FC<DocGenViewProps> = ({ activeProject, settings,
       provider,
       apiKey,
       model,
-      ollamaUrl: settings?.ollamaUrl
+      ollamaUrl: settings?.ollamaUrl,
+      cliPath: provider === 'claude-subscription' ? settings?.claudeCliPath
+        : provider === 'chatgpt-subscription' ? settings?.codexCliPath
+        : undefined
     };
   };
 
@@ -266,7 +270,9 @@ Requirements:
         toast.success(`Generated chapter draft: "${cleanTitle}"`);
         onLog('system', `AI Co-Pilot generated chapter "${cleanTitle}" (${result.length} characters).`, 'success');
       } else {
-        toast.error('AI synthesis returned empty response. Check your API key and network connection.');
+        toast.error(isSubscriptionProvider(aiConfig.provider)
+          ? 'AI synthesis returned an empty response. Check that you are signed in under Settings > AI Providers.'
+          : 'AI synthesis returned empty response. Check your API key and network connection.');
       }
     } catch (err) {
       console.error('Error generating AI chapter:', err);
